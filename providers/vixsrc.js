@@ -169,8 +169,8 @@ function extractStreamFromPage(url, contentType, contentId, seasonNum, episodeNu
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
         }
     })
-    .then(response => response.text())
-    .then(html => {
+    .then(async response => {
+            const html = await response.text();
         console.log(`[Vixsrc] HTML length: ${html.length} characters`);
 
         let masterPlaylistUrl = null;
