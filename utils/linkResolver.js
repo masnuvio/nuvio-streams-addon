@@ -20,7 +20,10 @@ async function defaultTryInstantDownload($, { post, origin, log = console }) {
   try {
     const urlObj = new URL(instantLink, origin);
     const keys = new URLSearchParams(urlObj.search).get('url');
-    if (!keys) return null;
+    if (!keys) {
+      log.log(`[LinkResolver] defaultTryInstantDownload: 'url' param missing in link: ${instantLink}`);
+      return null;
+    }
 
     const apiUrl = `${urlObj.origin}/api`;
     const formData = new FormData();
@@ -263,6 +266,7 @@ async function extractFinalDownloadFromFilePage($, {
       if (url) {
         const ok = validate ? await validate(url) : true;
         if (ok) return url;
+        log.log(`[LinkResolver] Validation failed for URL: ${url}`);
       }
     } catch (e) {
       log.log(`[LinkResolver] method error: ${e.message}`);

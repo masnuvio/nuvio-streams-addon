@@ -182,6 +182,10 @@ const { getUHDMoviesStreams } = require('./providers/uhdmovies.js'); // NEW: Imp
 const { getMoviesModStreams } = require('./providers/moviesmod.js'); // NEW: Import from moviesmod.js
 const { getTopMoviesStreams } = require('./providers/topmovies.js'); // NEW: Import from topmovies.js
 const { getMoviesDriveStreams } = require('./providers/moviesdrive.js'); // NEW: Import from moviesdrive.js
+// NEW: Read environment variable for 4KHDHub
+const ENABLE_4KHDHUB_PROVIDER = process.env.ENABLE_4KHDHUB_PROVIDER !== 'false';
+console.log(`[addon.js] 4KHDHub provider fetching enabled: ${ENABLE_4KHDHUB_PROVIDER}`);
+
 const { get4KHDHubStreams } = require('./providers/4khdhub.js'); // NEW: Import from 4khdhub.js
 const { getVixsrcStreams } = require('./providers/vixsrc.js'); // NEW: Import from vixsrc.js
 const { getMovieBoxStreams } = require('./providers/moviebox.js'); // NEW: Import from moviebox.js
