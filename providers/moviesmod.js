@@ -22,37 +22,6 @@ const getAxiosCookieJarSupport = async () => {
     }
     return axiosCookieJarSupport;
 };
-
-function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
-}
-
-// --- Proxy Configuration ---
-const MOVIESMOD_PROXY_URL = process.env.MOVIESMOD_PROXY_URL;
-if (MOVIESMOD_PROXY_URL) {
-    if (now - domainCacheTimestamp < DOMAIN_CACHE_TTL) {
-        return moviesModDomain;
-    }
-
-    try {
-        console.log('[MoviesMod] Fetching latest domain...');
-        const response = await makeRequest('https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json', { timeout: 10000 });
-        if (response.data && response.data.moviesmod) {
-            moviesModDomain = response.data.moviesmod;
-            domainCacheTimestamp = now;
-            console.log(`[MoviesMod] Updated domain to: ${moviesModDomain}`);
-        } else {
-            console.warn('[MoviesMod] Domain JSON fetched, but "moviesmod" key was not found. Using fallback.');
-        }
-    } catch (error) {
-        console.error(`[MoviesMod] Failed to fetch latest domain, using fallback. Error: ${error.message}`);
-    }
-    return moviesModDomain;
-}
-
-// --- Caching Configuration ---
-const CACHE_ENABLED = process.env.DISABLE_CACHE !== 'true';
-console.log(`[MoviesMod Cache] Internal cache is ${CACHE_ENABLED ? 'enabled' : 'disabled'}.`);
 const CACHE_DIR = process.env.VERCEL ? path.join('/tmp', '.moviesmod_cache') : path.join(__dirname, '.cache', 'moviesmod');
 
 // Initialize Redis cache
