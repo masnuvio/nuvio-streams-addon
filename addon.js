@@ -181,6 +181,10 @@ const { getMP4HydraStreams } = require('./providers/MP4Hydra.js'); // NEW: Impor
 const { getUHDMoviesStreams } = require('./providers/uhdmovies.js'); // NEW: Import from uhdmovies.js
 const { getMoviesModStreams } = require('./providers/moviesmod.js'); // NEW: Import from moviesmod.js
 const { getTopMoviesStreams } = require('./providers/topmovies.js'); // NEW: Import from topmovies.js
+// NEW: Read environment variable for MoviesDrive
+const ENABLE_MOVIESDRIVE_PROVIDER = process.env.ENABLE_MOVIESDRIVE_PROVIDER !== 'false';
+console.log(`[addon.js] MoviesDrive provider fetching enabled: ${ENABLE_MOVIESDRIVE_PROVIDER}`);
+
 const { getMoviesDriveStreams } = require('./providers/moviesdrive.js'); // NEW: Import from moviesdrive.js
 // NEW: Read environment variable for 4KHDHub
 const ENABLE_4KHDHUB_PROVIDER = process.env.ENABLE_4KHDHUB_PROVIDER !== 'false';

@@ -22,6 +22,8 @@ const getAxiosCookieJarSupport = async () => {
     }
     return axiosCookieJarSupport;
 };
+const CACHE_ENABLED = process.env.DISABLE_CACHE !== 'true';
+console.log(`[MoviesMod Cache] Internal cache is ${CACHE_ENABLED ? 'enabled' : 'disabled'}.`);
 const CACHE_DIR = process.env.VERCEL ? path.join('/tmp', '.moviesmod_cache') : path.join(__dirname, '.cache', 'moviesmod');
 
 // Initialize Redis cache
