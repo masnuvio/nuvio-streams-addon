@@ -1,0 +1,725 @@
+{
+  "movie": [
+    {
+      "provider": "4khdhub",
+      "contentType": "movie",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "MP4Hydra",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 266,
+      "sampleStream": null
+    },
+    {
+      "provider": "Showbox",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 1,
+      "sampleStream": null
+    },
+    {
+      "provider": "VidZee",
+      "contentType": "movie",
+      "status": "working",
+      "streamsFound": 2,
+      "error": null,
+      "errorType": null,
+      "responseTime": 428,
+      "sampleStream": {
+        "name": "VidZee S3 - Atlas",
+        "quality": "Atlas"
+      }
+    },
+    {
+      "provider": "animekai",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 0,
+      "sampleStream": null
+    },
+    {
+      "provider": "castle",
+      "contentType": "movie",
+      "status": "working",
+      "streamsFound": 3,
+      "error": null,
+      "errorType": null,
+      "responseTime": 4457,
+      "sampleStream": {
+        "name": "Castle [Shared] - 1080P",
+        "quality": "1080P"
+      }
+    },
+    {
+      "provider": "cinevibe",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 149,
+      "sampleStream": null
+    },
+    {
+      "provider": "dahmermovies",
+      "contentType": "movie",
+      "status": "working",
+      "streamsFound": 12,
+      "error": null,
+      "errorType": null,
+      "responseTime": 948,
+      "sampleStream": {
+        "name": "DahmerMovies",
+        "quality": "2160p | HDR"
+      }
+    },
+    {
+      "provider": "dramadrip",
+      "contentType": "movie",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "dvdplay",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 919,
+      "sampleStream": null
+    },
+    {
+      "provider": "hdhub4u",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 285,
+      "sampleStream": null
+    },
+    {
+      "provider": "hdrezkas",
+      "contentType": "movie",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "mallumv",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 794,
+      "sampleStream": null
+    },
+    {
+      "provider": "mapple",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 802,
+      "sampleStream": null
+    },
+    {
+      "provider": "moviebox",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 178,
+      "sampleStream": null
+    },
+    {
+      "provider": "moviesdrive",
+      "contentType": "movie",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "moviesmod",
+      "contentType": "movie",
+      "status": "require_error",
+      "streamsFound": 0,
+      "error": "Invalid or unexpected token",
+      "errorType": "syntax_or_dependency",
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "netmirror",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 1471,
+      "sampleStream": null
+    },
+    {
+      "provider": "soapertv",
+      "contentType": "movie",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "streamflix",
+      "contentType": "movie",
+      "status": "working",
+      "streamsFound": 4,
+      "error": null,
+      "errorType": null,
+      "responseTime": 395,
+      "sampleStream": {
+        "name": "StreamFlix",
+        "quality": "1080p"
+      }
+    },
+    {
+      "provider": "topmovies",
+      "contentType": "movie",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "uhdmovies",
+      "contentType": "movie",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "videasy",
+      "contentType": "movie",
+      "status": "working",
+      "streamsFound": 17,
+      "error": null,
+      "errorType": null,
+      "responseTime": 16454,
+      "sampleStream": {
+        "name": "VIDEASY Neon (Original) - 1080p",
+        "quality": "1080p"
+      }
+    },
+    {
+      "provider": "vidlink",
+      "contentType": "movie",
+      "status": "working",
+      "streamsFound": 3,
+      "error": null,
+      "errorType": null,
+      "responseTime": 1833,
+      "sampleStream": {
+        "name": "Vidlink - 1080p",
+        "quality": "1080p"
+      }
+    },
+    {
+      "provider": "vidnest",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 10919,
+      "sampleStream": null
+    },
+    {
+      "provider": "vidrock",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 126,
+      "sampleStream": null
+    },
+    {
+      "provider": "vidsrc",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 345,
+      "sampleStream": null
+    },
+    {
+      "provider": "vidsrcextractor",
+      "contentType": "movie",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "vixsrc",
+      "contentType": "movie",
+      "status": "working",
+      "streamsFound": 1,
+      "error": null,
+      "errorType": null,
+      "responseTime": 2202,
+      "sampleStream": {
+        "name": "Vixsrc",
+        "quality": "Auto"
+      }
+    },
+    {
+      "provider": "watch32",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 682,
+      "sampleStream": null
+    },
+    {
+      "provider": "xprime",
+      "contentType": "movie",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 396,
+      "sampleStream": null
+    },
+    {
+      "provider": "yflix",
+      "contentType": "movie",
+      "status": "working",
+      "streamsFound": 3,
+      "error": null,
+      "errorType": null,
+      "responseTime": 6222,
+      "sampleStream": {
+        "name": "YFlix default - 1080p",
+        "quality": "1080p"
+      }
+    }
+  ],
+  "tv": [
+    {
+      "provider": "4khdhub",
+      "contentType": "tv",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "MP4Hydra",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 1988,
+      "sampleStream": null
+    },
+    {
+      "provider": "Showbox",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 1,
+      "sampleStream": null
+    },
+    {
+      "provider": "VidZee",
+      "contentType": "tv",
+      "status": "working",
+      "streamsFound": 3,
+      "error": null,
+      "errorType": null,
+      "responseTime": 3577,
+      "sampleStream": {
+        "name": "VidZee S3 - Atlas",
+        "quality": "Atlas"
+      }
+    },
+    {
+      "provider": "animekai",
+      "contentType": "tv",
+      "status": "working",
+      "streamsFound": 4,
+      "error": null,
+      "errorType": null,
+      "responseTime": 7761,
+      "sampleStream": {
+        "name": "ANIMEKAI SUB - 480p",
+        "quality": "480p"
+      }
+    },
+    {
+      "provider": "castle",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 131,
+      "sampleStream": null
+    },
+    {
+      "provider": "cinevibe",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 1,
+      "sampleStream": null
+    },
+    {
+      "provider": "dahmermovies",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 177,
+      "sampleStream": null
+    },
+    {
+      "provider": "dramadrip",
+      "contentType": "tv",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "dvdplay",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 1053,
+      "sampleStream": null
+    },
+    {
+      "provider": "hdhub4u",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 188,
+      "sampleStream": null
+    },
+    {
+      "provider": "hdrezkas",
+      "contentType": "tv",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "mallumv",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 823,
+      "sampleStream": null
+    },
+    {
+      "provider": "mapple",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 1116,
+      "sampleStream": null
+    },
+    {
+      "provider": "moviebox",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 137,
+      "sampleStream": null
+    },
+    {
+      "provider": "moviesdrive",
+      "contentType": "tv",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "moviesmod",
+      "contentType": "tv",
+      "status": "require_error",
+      "streamsFound": 0,
+      "error": "Invalid or unexpected token",
+      "errorType": "syntax_or_dependency",
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "netmirror",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 1483,
+      "sampleStream": null
+    },
+    {
+      "provider": "soapertv",
+      "contentType": "tv",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "streamflix",
+      "contentType": "tv",
+      "status": "working",
+      "streamsFound": 2,
+      "error": null,
+      "errorType": null,
+      "responseTime": 831,
+      "sampleStream": {
+        "name": "StreamFlix",
+        "quality": "1080p"
+      }
+    },
+    {
+      "provider": "topmovies",
+      "contentType": "tv",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "uhdmovies",
+      "contentType": "tv",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "videasy",
+      "contentType": "tv",
+      "status": "working",
+      "streamsFound": 14,
+      "error": null,
+      "errorType": null,
+      "responseTime": 15824,
+      "sampleStream": {
+        "name": "VIDEASY Neon (Original) - 1080p",
+        "quality": "1080p"
+      }
+    },
+    {
+      "provider": "vidlink",
+      "contentType": "tv",
+      "status": "working",
+      "streamsFound": 3,
+      "error": null,
+      "errorType": null,
+      "responseTime": 1204,
+      "sampleStream": {
+        "name": "Vidlink - 1080p",
+        "quality": "1080p"
+      }
+    },
+    {
+      "provider": "vidnest",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 10544,
+      "sampleStream": null
+    },
+    {
+      "provider": "vidrock",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 121,
+      "sampleStream": null
+    },
+    {
+      "provider": "vidsrc",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 411,
+      "sampleStream": null
+    },
+    {
+      "provider": "vidsrcextractor",
+      "contentType": "tv",
+      "status": "no_stream_function",
+      "streamsFound": 0,
+      "error": "No stream function found",
+      "errorType": null,
+      "responseTime": null,
+      "sampleStream": null
+    },
+    {
+      "provider": "vixsrc",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 177,
+      "sampleStream": null
+    },
+    {
+      "provider": "watch32",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 1353,
+      "sampleStream": null
+    },
+    {
+      "provider": "xprime",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 461,
+      "sampleStream": null
+    },
+    {
+      "provider": "yflix",
+      "contentType": "tv",
+      "status": "no_streams",
+      "streamsFound": 0,
+      "error": "Provider executed but returned no streams",
+      "errorType": null,
+      "responseTime": 806019,
+      "sampleStream": null
+    }
+  ],
+  "summary": {
+    "working": [
+      "VidZee",
+      "animekai",
+      "castle",
+      "dahmermovies",
+      "streamflix",
+      "videasy",
+      "vidlink",
+      "vixsrc",
+      "yflix"
+    ],
+    "noStreams": [
+      "MP4Hydra",
+      "Showbox",
+      "cinevibe",
+      "dvdplay",
+      "hdhub4u",
+      "mallumv",
+      "mapple",
+      "moviebox",
+      "netmirror",
+      "vidnest",
+      "vidrock",
+      "vidsrc",
+      "watch32",
+      "xprime"
+    ],
+    "errors": [
+      "4khdhub",
+      "dramadrip",
+      "hdrezkas",
+      "moviesdrive",
+      "moviesmod",
+      "soapertv",
+      "topmovies",
+      "uhdmovies",
+      "vidsrcextractor"
+    ]
+  }
+}

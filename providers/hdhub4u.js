@@ -8,7 +8,7 @@ const TMDB_API_KEY = '439c478a771f35c05022f9feabcca01c';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
 // HDHub4u Configuration
-let MAIN_URL = "https://hdhub4u.frl";
+let MAIN_URL = "https://hdhub4u.rehab";
 const DOMAINS_URL = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json";
 const DOMAIN_CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
 let domainCacheTimestamp = 0;
@@ -177,9 +177,9 @@ function fetchAndUpdateDomain() {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
-    }).then(function(response) {
+    }).then(function (response) {
         if (response.ok) {
-            return response.json().then(function(data) {
+            return response.json().then(function (data) {
                 if (data && data.HDHUB4u) {
                     const newDomain = data.HDHUB4u;
                     if (newDomain !== MAIN_URL) {
@@ -191,7 +191,7 @@ function fetchAndUpdateDomain() {
                 }
             });
         }
-    }).catch(function(error) {
+    }).catch(function (error) {
         console.error(`[HDHub4u] Failed to fetch latest domains: ${error.message}`);
     });
 }
@@ -201,7 +201,7 @@ function fetchAndUpdateDomain() {
  * Should be called before any main site requests.
  */
 function getCurrentDomain() {
-    return fetchAndUpdateDomain().then(function() {
+    return fetchAndUpdateDomain().then(function () {
         return MAIN_URL;
     });
 }
@@ -497,7 +497,7 @@ function hubCloudExtractor(url, referer) {
             const links = [];
             const elements = $('div.card-body h2 a.btn').get();
 
-                // Process each element, converting async operations to promises
+            // Process each element, converting async operations to promises
             const processElements = elements.map(element => {
                 const link = $(element).attr('href');
                 const text = $(element).text();
@@ -521,22 +521,22 @@ function hubCloudExtractor(url, referer) {
                         headers: { ...HEADERS, Referer: link },
                         redirect: 'manual' // Do not follow redirects automatically
                     })
-                    .then(buzzResp => {
-                        if (buzzResp.status >= 300 && buzzResp.status < 400) {
-                            // It's a redirect, get the location header
-                            const location = buzzResp.headers.get('location');
-                            if (location && location.includes('hx-redirect=')) {
-                                const hxRedirectMatch = location.match(/hx-redirect=([^&]+)/);
-                                if (hxRedirectMatch) {
-                                    const dlink = decodeURIComponent(hxRedirectMatch[1]);
-                                    links.push({ source: `HubCloud - BuzzServer ${labelExtras}`, quality, url: dlink, size: sizeInBytes, fileName });
+                        .then(buzzResp => {
+                            if (buzzResp.status >= 300 && buzzResp.status < 400) {
+                                // It's a redirect, get the location header
+                                const location = buzzResp.headers.get('location');
+                                if (location && location.includes('hx-redirect=')) {
+                                    const hxRedirectMatch = location.match(/hx-redirect=([^&]+)/);
+                                    if (hxRedirectMatch) {
+                                        const dlink = decodeURIComponent(hxRedirectMatch[1]);
+                                        links.push({ source: `HubCloud - BuzzServer ${labelExtras}`, quality, url: dlink, size: sizeInBytes, fileName });
+                                    }
                                 }
                             }
-                        }
-                    })
-                    .catch(e => {
-                        console.error("[HubCloud] BuzzServer redirect failed for", link, e.message);
-                    });
+                        })
+                        .catch(e => {
+                            console.error("[HubCloud] BuzzServer redirect failed for", link, e.message);
+                        });
                 } else if (link.includes("pixeldra")) {
                     links.push({ source: `Pixeldrain ${labelExtras}`, quality, url: link, size: sizeInBytes, fileName });
                     return Promise.resolve();
@@ -1069,12 +1069,12 @@ function getTMDBDetails(tmdbId, mediaType) {
             'Accept': 'application/json',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
-    }).then(function(response) {
+    }).then(function (response) {
         if (!response.ok) {
             throw new Error(`TMDB API error: ${response.status}`);
         }
         return response.json();
-    }).then(function(data) {
+    }).then(function (data) {
         const title = mediaType === 'tv' ? data.name : data.title;
         const releaseDate = mediaType === 'tv' ? data.first_air_date : data.release_date;
         const year = releaseDate ? parseInt(releaseDate.split('-')[0]) : null;
@@ -1173,8 +1173,8 @@ function findBestTitleMatch(mediaInfo, searchResults, mediaType, season) {
         if (mediaType === 'tv' && season) {
             const titleLower = result.title.toLowerCase();
             const hasSeason = titleLower.includes(`season ${season}`) ||
-                             titleLower.includes(`s${season}`) ||
-                             titleLower.includes(`season ${season.toString().padStart(2, '0')}`);
+                titleLower.includes(`s${season}`) ||
+                titleLower.includes(`season ${season.toString().padStart(2, '0')}`);
             if (hasSeason) {
                 score += 0.3; // Season match bonus
             } else {
@@ -1213,7 +1213,7 @@ function getStreams(tmdbId, mediaType = 'movie', season = null, episode = null) 
     console.log(`[HDHub4u] Fetching streams for TMDB ID: ${tmdbId}, Type: ${mediaType}${mediaType === 'tv' ? `, S:${season}E:${episode}` : ''}`);
 
     // First, get movie/TV show details from TMDB
-    return getTMDBDetails(tmdbId, mediaType).then(function(mediaInfo) {
+    return getTMDBDetails(tmdbId, mediaType).then(function (mediaInfo) {
         if (!mediaInfo.title) {
             throw new Error('Could not extract title from TMDB response');
         }
@@ -1224,7 +1224,7 @@ function getStreams(tmdbId, mediaType = 'movie', season = null, episode = null) 
         const searchQuery = mediaType === 'tv' && season ? `${mediaInfo.title} season ${season}` : mediaInfo.title;
         console.log(`[HDHub4u] Searching for: "${searchQuery}"`);
 
-        return search(searchQuery).then(function(searchResults) {
+        return search(searchQuery).then(function (searchResults) {
             if (searchResults.length === 0) {
                 console.log('[HDHub4u] No search results found');
                 return [];
@@ -1237,13 +1237,13 @@ function getStreams(tmdbId, mediaType = 'movie', season = null, episode = null) 
             console.log(`[HDHub4u] Selected: "${selectedMedia.title}" (${selectedMedia.url})`);
 
             // Get download links
-            return getDownloadLinks(selectedMedia.url).then(function(result) {
+            return getDownloadLinks(selectedMedia.url).then(function (result) {
                 const { finalLinks, isMovie } = result;
 
                 // Filter by episode if specified for TV shows
                 let filteredLinks = finalLinks;
                 if (mediaType === 'tv' && episode !== null) {
-                    filteredLinks = finalLinks.filter(function(link) {
+                    filteredLinks = finalLinks.filter(function (link) {
                         return link.episode === episode;
                     });
                     console.log(`[HDHub4u] Filtered to ${filteredLinks.length} links for episode ${episode}`);
@@ -1251,14 +1251,14 @@ function getStreams(tmdbId, mediaType = 'movie', season = null, episode = null) 
 
                 // Convert to Nuvio format, filtering out unknown quality links
                 const streams = filteredLinks
-                    .filter(function(link) {
+                    .filter(function (link) {
                         // Skip links with unknown quality - these are usually just redirects
                         if (typeof link.quality !== 'number' || link.quality === 0) {
                             return false;
                         }
                         return true;
                     })
-                    .map(function(link) {
+                    .map(function (link) {
                         // Use the actual file name from HubCloud page if available, otherwise fallback to TMDB title
                         let mediaTitle = link.fileName && link.fileName !== 'Unknown' ? link.fileName : mediaInfo.title;
                         if (mediaType === 'tv' && season && episode && link.episode && !link.fileName) {
@@ -1298,7 +1298,7 @@ function getStreams(tmdbId, mediaType = 'movie', season = null, episode = null) 
 
                 // Sort by quality
                 const qualityOrder = { '4K': 4, '2160p': 4, '1440p': 3, '1080p': 2, '720p': 1, '480p': 0, '360p': -1, 'Unknown': -2 };
-                streams.sort(function(a, b) {
+                streams.sort(function (a, b) {
                     return (qualityOrder[b.quality] || -3) - (qualityOrder[a.quality] || -3);
                 });
 
@@ -1306,7 +1306,7 @@ function getStreams(tmdbId, mediaType = 'movie', season = null, episode = null) 
                 return streams;
             });
         });
-    }).catch(function(error) {
+    }).catch(function (error) {
         console.error(`[HDHub4u] Scraping error: ${error.message}`);
         return [];
     });

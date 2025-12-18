@@ -407,7 +407,10 @@ async function main() {
 }
 
 // Export the function for use in other modules
-module.exports = { getStreamContent };
+module.exports = { 
+    getStreamContent,
+    getStreams: getStreamContent
+};
 
 // Run main only if the script is executed directly
 if (require.main === module) {

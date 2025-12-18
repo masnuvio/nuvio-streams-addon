@@ -1667,4 +1667,7 @@ async function getUHDMoviesStreams(tmdbId, mediaType = 'movie', season = null, e
   }
 }
 
-module.exports = { getUHDMoviesStreams };
+module.exports = { 
+    getUHDMoviesStreams,
+    getStreams: getUHDMoviesStreams
+};

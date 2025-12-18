@@ -99,7 +99,7 @@ function parseVideoLinks(inputString) {
   if (!inputString) {
     throw new Error('No video links found');
   }
-  
+
   console.log(`[PARSE] Parsing video links from stream URL data`);
   const linksArray = inputString.split(',');
   const result = {};
@@ -108,29 +108,29 @@ function parseVideoLinks(inputString) {
     // Handle different quality formats:
     // 1. Simple format: [360p]https://example.com/video.mp4
     // 2. HTML format: [<span class="pjs-registered-quality">1080p<img...>]https://example.com/video.mp4
-    
+
     // Try simple format first (non-HTML)
     let match = link.match(/\[([^<\]]+)\](https?:\/\/[^\s,]+\.mp4|null)/);
-    
+
     // If not found, try HTML format with more flexible pattern
     if (!match) {
       // Extract quality text from HTML span
       const qualityMatch = link.match(/\[<span[^>]*>([^<]+)/);
       // Extract URL separately
       const urlMatch = link.match(/\][^[]*?(https?:\/\/[^\s,]+\.mp4|null)/);
-      
+
       if (qualityMatch && urlMatch) {
         match = [null, qualityMatch[1].trim(), urlMatch[1]];
       }
     }
-    
+
     if (match) {
       const qualityText = match[1].trim();
       const mp4Url = match[2];
-      
+
       // Extract the quality value (e.g., "360p", "1080p Ultra")
       let quality = qualityText;
-      
+
       // Skip null URLs (premium content that requires login)
       if (mp4Url !== 'null') {
         result[quality] = { type: 'mp4', url: mp4Url };
@@ -152,7 +152,7 @@ function parseSubtitles(inputString) {
     console.log('[SUBTITLES] No subtitles found');
     return [];
   }
-  
+
   console.log(`[PARSE] Parsing subtitles data`);
   const linksArray = inputString.split(',');
   const captions = [];
@@ -163,7 +163,7 @@ function parseSubtitles(inputString) {
     if (match) {
       const language = match[1];
       const url = match[2];
-      
+
       captions.push({
         id: url,
         language,
@@ -182,28 +182,28 @@ function parseSubtitles(inputString) {
 // Main scraper functions
 async function searchAndFindMediaId(media) {
   console.log(`[STEP 1] Searching for title: ${media.title}, type: ${media.type}, year: ${media.releaseYear || 'any'}`);
-  
+
   const itemRegexPattern = /<a href="([^"]+)"><span class="enty">([^<]+)<\/span> \(([^)]+)\)/g;
   const idRegexPattern = /\/(\d+)-[^/]+\.html$/;
 
   const fullUrl = new URL('/engine/ajax/search.php', rezkaBase);
   fullUrl.searchParams.append('q', media.title);
-  
+
   console.log(`[REQUEST] Making search request to: ${fullUrl.toString()}`);
   const response = await fetch(fullUrl.toString(), {
     headers: baseHeaders
   });
-  
+
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
-  
+
   const searchData = await response.text();
   console.log(`[RESPONSE] Search response length: ${searchData.length}`);
 
   const movieData = [];
   let match;
-  
+
   while ((match = itemRegexPattern.exec(searchData)) !== null) {
     const url = match[1];
     const titleAndYear = match[3];
@@ -215,10 +215,10 @@ async function searchAndFindMediaId(media) {
       const isShow = url.includes('/series/');
       const type = isMovie ? 'movie' : isShow ? 'show' : 'unknown';
 
-      movieData.push({ 
-        id: id ?? '', 
-        year: result.year ?? 0, 
-        type, 
+      movieData.push({
+        id: id ?? '',
+        year: result.year ?? 0,
+        type,
         url,
         title: match[2]
       });
@@ -232,7 +232,7 @@ async function searchAndFindMediaId(media) {
     filteredItems = movieData.filter(item => item.year === media.releaseYear);
     console.log(`[FILTER] Items filtered by year ${media.releaseYear}: ${filteredItems.length}`);
   }
-  
+
   // If type is provided, filter by type
   if (media.type) {
     filteredItems = filteredItems.filter(item => item.type === media.type);
@@ -244,11 +244,11 @@ async function searchAndFindMediaId(media) {
     movieData.forEach((item, index) => {
       console.log(`  ${index + 1}. ${item.title} (${item.year}) - ${item.type}`);
     });
-    
+
     // Let user select from results
     const selection = await prompt("Enter the number of the item you want to select (or press Enter to use the first result): ");
     const selectedIndex = parseInt(selection) - 1;
-    
+
     if (!isNaN(selectedIndex) && selectedIndex >= 0 && selectedIndex < movieData.length) {
       console.log(`[RESULT] Selected item: id=${movieData[selectedIndex].id}, title=${movieData[selectedIndex].title}`);
       return movieData[selectedIndex];
@@ -256,10 +256,10 @@ async function searchAndFindMediaId(media) {
       console.log(`[RESULT] Using first result: id=${movieData[0].id}, title=${movieData[0].title}`);
       return movieData[0];
     }
-    
+
     return null;
   }
-  
+
   if (filteredItems.length > 0) {
     console.log(`[RESULT] Selected item: id=${filteredItems[0].id}, title=${filteredItems[0].title}`);
     return filteredItems[0];
@@ -271,19 +271,19 @@ async function searchAndFindMediaId(media) {
 
 async function getTranslatorId(url, id, media) {
   console.log(`[STEP 2] Getting translator ID for url=${url}, id=${id}`);
-  
+
   // Make sure the URL is absolute
   const fullUrl = url.startsWith('http') ? url : `${rezkaBase}${url.startsWith('/') ? url.substring(1) : url}`;
   console.log(`[REQUEST] Making request to: ${fullUrl}`);
-  
+
   const response = await fetch(fullUrl, {
     headers: baseHeaders,
   });
-  
+
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
-  
+
   const responseText = await response.text();
   console.log(`[RESPONSE] Translator page response length: ${responseText.length}`);
 
@@ -297,28 +297,28 @@ async function getTranslatorId(url, id, media) {
   const regexPattern = new RegExp(`sof\\.tv\\.${functionName}\\(${id}, ([^,]+)`, 'i');
   const match = responseText.match(regexPattern);
   const translatorId = match ? match[1] : null;
-  
+
   console.log(`[RESULT] Extracted translator ID: ${translatorId}`);
   return translatorId;
 }
 
 async function getStream(id, translatorId, media) {
   console.log(`[STEP 3] Getting stream for id=${id}, translatorId=${translatorId}`);
-  
+
   const searchParams = new URLSearchParams();
   searchParams.append('id', id);
   searchParams.append('translator_id', translatorId);
-  
+
   if (media.type === 'show') {
     searchParams.append('season', media.season.number.toString());
     searchParams.append('episode', media.episode.number.toString());
     console.log(`[PARAMS] Show params: season=${media.season.number}, episode=${media.episode.number}`);
   }
-  
+
   const randomFavs = generateRandomFavs();
   searchParams.append('favs', randomFavs);
   searchParams.append('action', media.type === 'show' ? 'get_stream' : 'get_movie');
-  
+
   const fullUrl = `${rezkaBase}ajax/get_cdn_series/`;
   console.log(`[REQUEST] Making stream request to: ${fullUrl} with action=${media.type === 'show' ? 'get_stream' : 'get_movie'}`);
 
@@ -357,7 +357,7 @@ async function getStream(id, translatorId, media) {
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
-  
+
   const rawText = await response.text();
   console.log(`[RESPONSE] Stream response length: ${rawText.length}`);
 
@@ -365,15 +365,15 @@ async function getStream(id, translatorId, media) {
   try {
     const parsedResponse = JSON.parse(rawText);
     console.log(`[RESULT] Parsed response successfully`);
-    
+
     // Process video qualities and subtitles
     const qualities = parseVideoLinks(parsedResponse.url);
     const captions = parseSubtitles(parsedResponse.subtitle);
-    
+
     // Add the parsed data to the response
     parsedResponse.formattedQualities = qualities;
     parsedResponse.formattedCaptions = captions;
-    
+
     return parsedResponse;
   } catch (e) {
     console.error(`[ERROR] Failed to parse JSON response: ${e.message}`);
@@ -386,9 +386,9 @@ async function getStream(id, translatorId, media) {
 async function main() {
   try {
     console.log('=== HDREZKA SCRAPER TEST ===');
-    
+
     let media;
-    
+
     // Check if we have command line arguments
     if (argOptions.title) {
       // Use command line arguments
@@ -397,12 +397,12 @@ async function main() {
         title: argOptions.title,
         releaseYear: argOptions.year || null
       };
-      
+
       // If it's a show, add season and episode
       if (media.type === 'show') {
         media.season = { number: argOptions.season || 1 };
         media.episode = { number: argOptions.episode || 1 };
-        
+
         console.log(`Testing scrape for ${media.type}: ${media.title} ${media.releaseYear ? `(${media.releaseYear})` : ''} S${media.season.number}E${media.episode.number}`);
       } else {
         console.log(`Testing scrape for ${media.type}: ${media.title} ${media.releaseYear ? `(${media.releaseYear})` : ''}`);
@@ -410,34 +410,34 @@ async function main() {
     } else {
       // Get user input interactively
       const title = await prompt('Enter title to search: ');
-      const mediaType = await prompt('Enter media type (movie/show): ').then(type => 
+      const mediaType = await prompt('Enter media type (movie/show): ').then(type =>
         type.toLowerCase() === 'movie' || type.toLowerCase() === 'show' ? type.toLowerCase() : 'show'
       );
-      const releaseYear = await prompt('Enter release year (optional): ').then(year => 
+      const releaseYear = await prompt('Enter release year (optional): ').then(year =>
         year ? parseInt(year) : null
       );
-      
+
       // Create media object
       media = {
         type: mediaType,
         title: title,
         releaseYear: releaseYear
       };
-      
+
       // If it's a show, get season and episode
       if (mediaType === 'show') {
         const seasonNum = await prompt('Enter season number: ').then(num => parseInt(num) || 1);
         const episodeNum = await prompt('Enter episode number: ').then(num => parseInt(num) || 1);
-        
+
         media.season = { number: seasonNum };
         media.episode = { number: episodeNum };
-        
+
         console.log(`Testing scrape for ${media.type}: ${media.title} ${media.releaseYear ? `(${media.releaseYear})` : ''} S${media.season.number}E${media.episode.number}`);
       } else {
         console.log(`Testing scrape for ${media.type}: ${media.title} ${media.releaseYear ? `(${media.releaseYear})` : ''}`);
       }
     }
-    
+
     // Step 1: Search and find media ID
     const result = await searchAndFindMediaId(media);
     if (!result || !result.id) {
@@ -461,7 +461,7 @@ async function main() {
       rl.close();
       return;
     }
-    
+
     // Format output in clean JSON similar to CLI output
     const formattedOutput = {
       embeds: [],
@@ -472,9 +472,9 @@ async function main() {
           flags: ['cors-allowed', 'ip-locked'],
           captions: streamData.formattedCaptions.map(caption => ({
             id: caption.url,
-            language: caption.language === 'Русский' ? 'ru' : 
-                     caption.language === 'Українська' ? 'uk' : 
-                     caption.language === 'English' ? 'en' : caption.language.toLowerCase(),
+            language: caption.language === 'Русский' ? 'ru' :
+              caption.language === 'Українська' ? 'uk' :
+                caption.language === 'English' ? 'en' : caption.language.toLowerCase(),
             hasCorsRestrictions: false,
             type: 'vtt',
             url: caption.url
@@ -487,7 +487,7 @@ async function main() {
             if (numericMatch) {
               qualityKey = numericMatch[1];
             }
-            
+
             acc[qualityKey] = {
               type: data.type,
               url: data.url
@@ -497,11 +497,11 @@ async function main() {
         }
       ]
     };
-    
+
     // Display the formatted output
     console.log('✓ Done!');
     console.log(JSON.stringify(formattedOutput, null, 2).replace(/"([^"]+)":/g, '$1:'));
-    
+
     console.log('=== SCRAPING COMPLETE ===');
   } catch (error) {
     console.error(`Error: ${error.message}`);
@@ -513,4 +513,4 @@ async function main() {
   }
 }
 
-main(); 
+// main(); 

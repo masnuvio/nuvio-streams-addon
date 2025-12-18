@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+const axios = require('axios');
 // NetMirror Scraper for Nuvio Local Scrapers
 // React Native compatible version - No async/await for sandbox compatibility
 // Fetches streaming links from net51.cc for Netflix, Prime Video, and Disney+ content
@@ -7,7 +7,7 @@ console.log('[NetMirror] Initializing NetMirror provider');
 
 // Constants
 const TMDB_API_KEY = "439c478a771f35c05022f9feabcca01c";
-const NETMIRROR_BASE = 'https://net51.cc/';
+const NETMIRROR_BASE = 'https://netmirror.app/';
 const BASE_HEADERS = {
     'X-Requested-With': 'XMLHttpRequest',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -23,18 +23,40 @@ const COOKIE_EXPIRY = 54000000; // 15 hours in milliseconds
 
 // Helper function to make HTTP requests
 function makeRequest(url, options = {}) {
-    return fetch(url, {
-        ...options,
+    const config = {
+        method: options.method || 'GET',
+        url: url,
         headers: {
             ...BASE_HEADERS,
             ...options.headers
         },
-        timeout: 10000
-    }).then(function (response) {
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        timeout: 10000,
+        validateStatus: function (status) {
+            return status >= 200 && status < 300; // default
         }
-        return response;
+    };
+
+    if (options.body) {
+        config.data = options.body;
+    }
+
+    return axios(config).then(function (response) {
+        // Axios returns data directly, but we need to mimic fetch response for compatibility with existing logic
+        // or just return the response object and let the chain handle it.
+        // The existing logic expects .json() or .text() methods.
+
+        return {
+            ok: true,
+            status: response.status,
+            statusText: response.statusText,
+            headers: {
+                get: (name) => response.headers[name]
+            },
+            json: () => Promise.resolve(response.data),
+            text: () => Promise.resolve(typeof response.data === 'string' ? response.data : JSON.stringify(response.data))
+        };
+    }).catch(function (error) {
+        throw new Error(`HTTP ${error.response ? error.response.status : 'Unknown'}: ${error.message}`);
     });
 }
 
@@ -67,7 +89,8 @@ function bypass() {
             const setCookieHeader = response.headers.get('set-cookie');
             let extractedCookie = null;
 
-            if (setCookieHeader && (typeof setCookieHeader === 'string' || Array.isArray(setCookieHeader))) {
+            if (setCookieHeader) {
+                // Axios headers are usually lowercase and can be array or string
                 const cookieString = Array.isArray(setCookieHeader) ? setCookieHeader.join('; ') : setCookieHeader;
                 const cookieMatch = cookieString.match(/t_hash_t=([^;]+)/);
                 if (cookieMatch) {

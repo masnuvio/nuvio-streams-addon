@@ -192,7 +192,31 @@ console.log(`[addon.js] 4KHDHub provider fetching enabled: ${ENABLE_4KHDHUB_PROV
 
 const { get4KHDHubStreams } = require('./providers/4khdhub.js'); // NEW: Import from 4khdhub.js
 const { getVixsrcStreams } = require('./providers/vixsrc.js'); // NEW: Import from vixsrc.js
+
+// NEW: Read environment variable for MovieBox
+const ENABLE_MOVIEBOX_PROVIDER = process.env.ENABLE_MOVIEBOX_PROVIDER !== 'false';
+console.log(`[addon.js] MovieBox provider fetching enabled: ${ENABLE_MOVIEBOX_PROVIDER}`);
+
 const { getMovieBoxStreams } = require('./providers/moviebox.js'); // NEW: Import from moviebox.js
+
+// Add all missing provider enable flags
+const ENABLE_ANIMEKAI_PROVIDER = process.env.ENABLE_ANIMEKAI_PROVIDER !== 'false';
+const ENABLE_CINEVIBE_PROVIDER = process.env.ENABLE_CINEVIBE_PROVIDER !== 'false';
+const ENABLE_DAHMERMOVIES_PROVIDER = process.env.ENABLE_DAHMERMOVIES_PROVIDER !== 'false';
+const ENABLE_DVDPLAY_PROVIDER = process.env.ENABLE_DVDPLAY_PROVIDER !== 'false';
+const ENABLE_HDHUB4U_PROVIDER = process.env.ENABLE_HDHUB4U_PROVIDER !== 'false';
+const ENABLE_MALLUMV_PROVIDER = process.env.ENABLE_MALLUMV_PROVIDER !== 'false';
+const ENABLE_MAPPLE_PROVIDER = process.env.ENABLE_MAPPLE_PROVIDER !== 'false';
+const ENABLE_STREAMFLIX_PROVIDER = process.env.ENABLE_STREAMFLIX_PROVIDER !== 'false';
+const ENABLE_VIDEASY_PROVIDER = process.env.ENABLE_VIDEASY_PROVIDER !== 'false';
+const ENABLE_VIDLINK_PROVIDER = process.env.ENABLE_VIDLINK_PROVIDER !== 'false';
+const ENABLE_VIDNEST_ANIME_PROVIDER = process.env.ENABLE_VIDNEST_ANIME_PROVIDER !== 'false';
+const ENABLE_VIDNEST_PROVIDER = process.env.ENABLE_VIDNEST_PROVIDER !== 'false';
+const ENABLE_VIDROCK_PROVIDER = process.env.ENABLE_VIDROCK_PROVIDER !== 'false';
+const ENABLE_WATCH32_PROVIDER = process.env.ENABLE_WATCH32_PROVIDER !== 'false';
+const ENABLE_XPRIME_PROVIDER = process.env.ENABLE_XPRIME_PROVIDER !== 'false';
+const ENABLE_YFLIX_PROVIDER = process.env.ENABLE_YFLIX_PROVIDER !== 'false';
+
 const { getStreams: getAnimeKaiStreams } = require('./providers/animekai.js');
 const { getStreams: getCinevibeStreams } = require('./providers/cinevibe.js');
 const { getStreams: getDahmerMoviesStreams } = require('./providers/dahmermovies.js');
@@ -209,6 +233,16 @@ const { getStreams: getVidRockStreams } = require('./providers/vidrock.js');
 const { getStreams: getWatch32Streams } = require('./providers/watch32.js');
 const { getStreams: getXprimeStreams } = require('./providers/xprime.js');
 const { getStreams: getYflixStreams } = require('./providers/yflix.js');
+
+// NEW: Read environment variable for NetMirror
+const ENABLE_NETMIRROR_PROVIDER = process.env.ENABLE_NETMIRROR_PROVIDER !== 'false';
+console.log(`[addon.js] NetMirror provider fetching enabled: ${ENABLE_NETMIRROR_PROVIDER}`);
+const { getStreams: getNetMirrorStreams } = require('./providers/netmirror.js');
+
+// NEW: Read environment variable for Castle
+const ENABLE_CASTLE_PROVIDER = process.env.ENABLE_CASTLE_PROVIDER !== 'false';
+console.log(`[addon.js] Castle provider fetching enabled: ${ENABLE_CASTLE_PROVIDER}`);
+const { getStreams: getCastleStreams } = require('./providers/castle.js');
 const axios = require('axios'); // For external provider requests
 
 // Helper function to make requests to external provider services

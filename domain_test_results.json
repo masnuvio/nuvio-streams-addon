@@ -1,0 +1,148 @@
+{
+  "timestamp": "2025-12-18T13:17:19.124Z",
+  "results": {
+    "moviesmod": [
+      {
+        "url": "https://moviesmod.bid",
+        "status": "dns_error",
+        "statusCode": null,
+        "responseTime": 50,
+        "error": "getaddrinfo ENOTFOUND moviesmod.bid",
+        "cloudflare": false,
+        "redirect": null
+      },
+      {
+        "url": "https://moviesmod.how",
+        "status": "error",
+        "statusCode": null,
+        "responseTime": 187,
+        "error": "getaddrinfo EAI_AGAIN moviesmod.how",
+        "cloudflare": false,
+        "redirect": null
+      },
+      {
+        "url": "https://moviesmod.in",
+        "status": "dns_error",
+        "statusCode": null,
+        "responseTime": 5,
+        "error": "getaddrinfo ENOTFOUND moviesmod.in",
+        "cloudflare": false,
+        "redirect": null
+      },
+      {
+        "url": "https://moviesmod.city",
+        "status": "dns_error",
+        "statusCode": null,
+        "responseTime": 66,
+        "error": "getaddrinfo ENOTFOUND moviesmod.city",
+        "cloudflare": false,
+        "redirect": null
+      },
+      {
+        "url": "https://moviesmod.kids",
+        "status": "dns_error",
+        "statusCode": null,
+        "responseTime": 4,
+        "error": "getaddrinfo ENOTFOUND moviesmod.kids",
+        "cloudflare": false,
+        "redirect": null
+      },
+      {
+        "url": "https://moviesmod.org",
+        "status": "error",
+        "statusCode": null,
+        "responseTime": 188,
+        "error": "getaddrinfo EAI_AGAIN moviesmod.gift",
+        "cloudflare": false,
+        "redirect": null
+      }
+    ],
+    "netmirror": [
+      {
+        "url": "https://netmirror.app",
+        "status": "working",
+        "statusCode": 200,
+        "responseTime": 740,
+        "error": null,
+        "cloudflare": true,
+        "redirect": "https://netmirror.gg/1/en"
+      },
+      {
+        "url": "https://net51.cc",
+        "status": "not_found",
+        "statusCode": 404,
+        "responseTime": 261,
+        "error": null,
+        "cloudflare": true,
+        "redirect": "https://net51.cc/"
+      },
+      {
+        "url": "https://netmirror.to",
+        "status": "working",
+        "statusCode": 200,
+        "responseTime": 1093,
+        "error": null,
+        "cloudflare": false,
+        "redirect": "http://netmirror.to/?utm_source=netmirror.to&utm_medium=netmirror.to_med&utm_term=netmirror.to_term&utm_content=netmirror.to_cont&utm_campaign=netmirror.to_camp&ok=yes"
+      }
+    ],
+    "vidsrc": [
+      {
+        "url": "https://vidsrc.to",
+        "status": "working",
+        "statusCode": 200,
+        "responseTime": 221,
+        "error": null,
+        "cloudflare": true,
+        "redirect": "https://vidsrc.to/"
+      },
+      {
+        "url": "https://vidsrc.me",
+        "status": "working",
+        "statusCode": 200,
+        "responseTime": 470,
+        "error": null,
+        "cloudflare": true,
+        "redirect": "https://vidsrcme.ru/"
+      },
+      {
+        "url": "https://vidsrc.net",
+        "status": "working",
+        "statusCode": 200,
+        "responseTime": 339,
+        "error": null,
+        "cloudflare": true,
+        "redirect": "https://vidsrc-embed.ru/"
+      }
+    ],
+    "showbox": [
+      {
+        "url": "https://www.showbox.media",
+        "status": "blocked",
+        "statusCode": 403,
+        "responseTime": 69,
+        "error": null,
+        "cloudflare": true,
+        "redirect": "https://www.showbox.media/"
+      }
+    ],
+    "moviebox": [
+      {
+        "url": "https://www.movieboxpro.app",
+        "status": "blocked",
+        "statusCode": 403,
+        "responseTime": 43,
+        "error": null,
+        "cloudflare": true,
+        "redirect": "https://www.movieboxpro.app/"
+      }
+    ]
+  },
+  "workingDomains": {
+    "moviesmod": null,
+    "netmirror": "https://netmirror.app",
+    "vidsrc": "https://vidsrc.to",
+    "showbox": null,
+    "moviebox": null
+  }
+}

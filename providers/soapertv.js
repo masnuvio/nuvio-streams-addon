@@ -285,4 +285,7 @@ async function getSoaperTvStreams(tmdbId, mediaType = 'movie', season = '', epis
   }
 }
 
-module.exports = { getSoaperTvStreams };
+module.exports = { 
+    getSoaperTvStreams,
+    getStreams: getSoaperTvStreams
+};

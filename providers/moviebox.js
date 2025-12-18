@@ -761,4 +761,7 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
         });
 }
 
-module.exports = { getMovieBoxStreams };
+module.exports = {
+    getMovieBoxStreams,
+    getStreams: getMovieBoxStreams // Add wrapper for consistency
+};

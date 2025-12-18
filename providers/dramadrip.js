@@ -12,16 +12,16 @@ const { followRedirectToFilePage, extractFinalDownloadFromFilePage } = require('
 // Dynamic import for axios-cookiejar-support
 let axiosCookieJarSupport = null;
 const getAxiosCookieJarSupport = async () => {
-  if (!axiosCookieJarSupport) {
-    axiosCookieJarSupport = await import('axios-cookiejar-support');
-  }
-  return axiosCookieJarSupport;
+    if (!axiosCookieJarSupport) {
+        axiosCookieJarSupport = await import('axios-cookiejar-support');
+    }
+    return axiosCookieJarSupport;
 };
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY || "439c478a771f35c05022f9feabcca01c";
 
 function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'); // $& means the whole matched string
+    return string.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'); // $& means the whole matched string
 }
 
 // Base64 decode utility function
@@ -287,9 +287,9 @@ async function getDramaDripDomain() {
 // --- Proxy Configuration ---
 const DRAMADRIP_PROXY_URL = process.env.DRAMADRIP_PROXY_URL;
 if (DRAMADRIP_PROXY_URL) {
-  console.log(`[DramaDrip] Proxy support enabled: ${DRAMADRIP_PROXY_URL}`);
+    console.log(`[DramaDrip] Proxy support enabled: ${DRAMADRIP_PROXY_URL}`);
 } else {
-  console.log('[DramaDrip] No proxy configured, using direct connections');
+    console.log('[DramaDrip] No proxy configured, using direct connections');
 }
 
 // --- Cache Configuration ---
@@ -310,19 +310,19 @@ const redisCache = new RedisCache('DramaDrip');
 
 const getFromCache = async (key) => {
     if (!CACHE_ENABLED) return null;
-    
+
     // Try Redis cache first, then fallback to file system
     const cachedData = await redisCache.getFromCache(key, '', CACHE_DIR);
     if (cachedData) {
         return cachedData;
     }
-    
+
     return null;
 };
 
 const saveToCache = async (key, data) => {
     if (!CACHE_ENABLED) return;
-    
+
     // Save to both Redis and file system
     await redisCache.saveToCache(key, data, '', CACHE_DIR);
 };
@@ -334,88 +334,88 @@ ensureCacheDir();
 
 // Proxy wrapper function
 const makeRequest = async (url, options = {}) => {
-  if (DRAMADRIP_PROXY_URL) {
-    // Route through proxy
-    const proxiedUrl = `${DRAMADRIP_PROXY_URL}${encodeURIComponent(url)}`;
-    console.log(`[DramaDrip] Making proxied request to: ${url}`);
-    return axios.get(proxiedUrl, options);
-  } else {
-    // Direct request
-    console.log(`[DramaDrip] Making direct request to: ${url}`);
-    return axios.get(url, options);
-  }
+    if (DRAMADRIP_PROXY_URL) {
+        // Route through proxy
+        const proxiedUrl = `${DRAMADRIP_PROXY_URL}${encodeURIComponent(url)}`;
+        console.log(`[DramaDrip] Making proxied request to: ${url}`);
+        return axios.get(proxiedUrl, options);
+    } else {
+        // Direct request
+        console.log(`[DramaDrip] Making direct request to: ${url}`);
+        return axios.get(url, options);
+    }
 };
 
 // Helper function to create a proxied session for SID resolution
 // Helper function to extract cookies from jar for a specific URL
 const getCookiesForUrl = async (jar, url) => {
-  try {
-    const cookies = await jar.getCookies(url);
-    return cookies.map(cookie => cookie.toString()).join('; ');
-  } catch (error) {
-    console.error(`[DramaDrip] Error extracting cookies: ${error.message}`);
-    return '';
-  }
+    try {
+        const cookies = await jar.getCookies(url);
+        return cookies.map(cookie => cookie.toString()).join('; ');
+    } catch (error) {
+        console.error(`[DramaDrip] Error extracting cookies: ${error.message}`);
+        return '';
+    }
 };
 
 const createProxiedSession = async (jar) => {
-  const { wrapper } = await getAxiosCookieJarSupport();
-  
-  const sessionConfig = {
-    jar,
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-      'Accept-Language': 'en-US,en;q=0.5',
-      'Connection': 'keep-alive',
-      'Upgrade-Insecure-Requests': '1'
+    const { wrapper } = await getAxiosCookieJarSupport();
+
+    const sessionConfig = {
+        jar,
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
+        }
+    };
+
+    const session = wrapper(axios.create(sessionConfig));
+
+    // If proxy is enabled, wrap the session methods to use proxy
+    if (DRAMADRIP_PROXY_URL) {
+        console.log(`[DramaDrip] Creating SID session with proxy: ${DRAMADRIP_PROXY_URL}`);
+        const originalGet = session.get.bind(session);
+        const originalPost = session.post.bind(session);
+
+        session.get = async (url, options = {}) => {
+            const proxiedUrl = `${DRAMADRIP_PROXY_URL}${encodeURIComponent(url)}`;
+            console.log(`[DramaDrip] Making proxied SID GET request to: ${url}`);
+
+            // Extract cookies from jar and add to headers
+            const cookieString = await getCookiesForUrl(jar, url);
+            if (cookieString) {
+                console.log(`[DramaDrip] Adding cookies to proxied request: ${cookieString}`);
+                options.headers = {
+                    ...options.headers,
+                    'Cookie': cookieString
+                };
+            }
+
+            return originalGet(proxiedUrl, options);
+        };
+
+        session.post = async (url, data, options = {}) => {
+            const proxiedUrl = `${DRAMADRIP_PROXY_URL}${encodeURIComponent(url)}`;
+            console.log(`[DramaDrip] Making proxied SID POST request to: ${url}`);
+
+            // Extract cookies from jar and add to headers
+            const cookieString = await getCookiesForUrl(jar, url);
+            if (cookieString) {
+                console.log(`[DramaDrip] Adding cookies to proxied request: ${cookieString}`);
+                options.headers = {
+                    ...options.headers,
+                    'Cookie': cookieString
+                };
+            }
+
+            return originalPost(proxiedUrl, data, options);
+        };
     }
-  };
 
-  const session = wrapper(axios.create(sessionConfig));
-
-  // If proxy is enabled, wrap the session methods to use proxy
-  if (DRAMADRIP_PROXY_URL) {
-    console.log(`[DramaDrip] Creating SID session with proxy: ${DRAMADRIP_PROXY_URL}`);
-    const originalGet = session.get.bind(session);
-    const originalPost = session.post.bind(session);
-
-    session.get = async (url, options = {}) => {
-      const proxiedUrl = `${DRAMADRIP_PROXY_URL}${encodeURIComponent(url)}`;
-      console.log(`[DramaDrip] Making proxied SID GET request to: ${url}`);
-      
-      // Extract cookies from jar and add to headers
-      const cookieString = await getCookiesForUrl(jar, url);
-      if (cookieString) {
-        console.log(`[DramaDrip] Adding cookies to proxied request: ${cookieString}`);
-        options.headers = {
-          ...options.headers,
-          'Cookie': cookieString
-        };
-      }
-      
-      return originalGet(proxiedUrl, options);
-    };
-
-    session.post = async (url, data, options = {}) => {
-      const proxiedUrl = `${DRAMADRIP_PROXY_URL}${encodeURIComponent(url)}`;
-      console.log(`[DramaDrip] Making proxied SID POST request to: ${url}`);
-      
-      // Extract cookies from jar and add to headers
-      const cookieString = await getCookiesForUrl(jar, url);
-      if (cookieString) {
-        console.log(`[DramaDrip] Adding cookies to proxied request: ${cookieString}`);
-        options.headers = {
-          ...options.headers,
-          'Cookie': cookieString
-        };
-      }
-      
-      return originalPost(proxiedUrl, data, options);
-    };
-  }
-
-  return session;
+    return session;
 };
 
 // Helper function to parse quality strings into numerical values
@@ -471,7 +471,7 @@ async function extractDramaDripLinks(url) {
     try {
         const { data } = await makeRequest(url);
         const $ = cheerio.load(data);
-        
+
         // Check for TV show season headers first
         const seasonHeaders = $('h2.wp-block-heading:contains("Season")');
         if (seasonHeaders.length > 0) {
@@ -512,7 +512,7 @@ async function extractDramaDripLinks(url) {
         if (qualities.length > 0) {
             return { type: 'movie', data: qualities };
         }
-        
+
         console.log('[DramaDrip] Could not find any TV seasons or movie download links.');
         return null;
 
@@ -540,7 +540,7 @@ async function resolveCinemaKitOrModproLink(initialUrl, refererUrl) {
         const { data } = await makeRequest(actualUrl, { headers: { 'Referer': refererUrl } });
         const $ = cheerio.load(data);
         const finalLinks = [];
-        
+
         // Try TV show selectors first
         let episodeLinks = $('.entry-content h3:contains("Episode") a');
         if (episodeLinks.length > 0) {
@@ -562,7 +562,7 @@ async function resolveCinemaKitOrModproLink(initialUrl, refererUrl) {
                 const text = $(el).text().trim();
                 const isSupported = link && (link.includes('driveseed.org') || link.includes('tech.unblockedgames.world') || link.includes('tech.creativeexpressionsblog.com') || link.includes('tech.examzculture.in'));
                 if (isSupported && text && !text.toLowerCase().includes('batch') && !text.toLowerCase().includes('zip')) {
-                     finalLinks.push({ type: 'episode', name: text.replace(/\s+/g, ' '), url: link });
+                    finalLinks.push({ type: 'episode', name: text.replace(/\s+/g, ' '), url: link });
                 }
             });
             return { type: 'episodes', links: finalLinks };
@@ -570,15 +570,15 @@ async function resolveCinemaKitOrModproLink(initialUrl, refererUrl) {
 
         // Fallback to movie selector
         $('.wp-block-button.movie_btn a').each((i, el) => {
-             const link = $(el).attr('href');
-             const text = $(el).text().trim();
-             const isSupported = link && (link.includes('driveseed.org') || link.includes('tech.unblockedgames.world') || link.includes('tech.creativeexpressionsblog.com') || link.includes('tech.examzculture.in'));
-             if(isSupported && text) {
+            const link = $(el).attr('href');
+            const text = $(el).text().trim();
+            const isSupported = link && (link.includes('driveseed.org') || link.includes('tech.unblockedgames.world') || link.includes('tech.creativeexpressionsblog.com') || link.includes('tech.examzculture.in'));
+            if (isSupported && text) {
                 finalLinks.push({ type: 'server', name: text, url: link });
-             }
+            }
         });
 
-        if(finalLinks.length > 0) {
+        if (finalLinks.length > 0) {
             return { type: 'servers', links: finalLinks };
         }
 
@@ -592,112 +592,112 @@ async function resolveCinemaKitOrModproLink(initialUrl, refererUrl) {
 
 // Function to resolve tech.unblockedgames.world links to driveleech URLs (adapted from moviesmod.js)
 async function resolveTechUnblockedLink(sidUrl) {
-  console.log(`[DramaDrip] Resolving SID link: ${sidUrl}`);
-  const { origin } = new URL(sidUrl);
-  const jar = new CookieJar();
+    console.log(`[DramaDrip] Resolving SID link: ${sidUrl}`);
+    const { origin } = new URL(sidUrl);
+    const jar = new CookieJar();
 
-  // Create session with proxy support
-  const session = await createProxiedSession(jar);
+    // Create session with proxy support
+    const session = await createProxiedSession(jar);
 
-  try {
-    // Step 0: Get the _wp_http value
-    console.log("  [SID] Step 0: Fetching initial page...");
-    const responseStep0 = await session.get(sidUrl);
-    let $ = cheerio.load(responseStep0.data);
-    const initialForm = $('#landing');
-    const wp_http_step1 = initialForm.find('input[name="_wp_http"]').val();
-    const action_url_step1 = initialForm.attr('action');
+    try {
+        // Step 0: Get the _wp_http value
+        console.log("  [SID] Step 0: Fetching initial page...");
+        const responseStep0 = await session.get(sidUrl);
+        let $ = cheerio.load(responseStep0.data);
+        const initialForm = $('#landing');
+        const wp_http_step1 = initialForm.find('input[name="_wp_http"]').val();
+        const action_url_step1 = initialForm.attr('action');
 
-    if (!wp_http_step1 || !action_url_step1) {
-      console.error("  [SID] Error: Could not find _wp_http in initial form.");
-      return null;
-    }
-
-    // Step 1: POST to the first form's action URL
-    console.log("  [SID] Step 1: Submitting initial form...");
-    const step1Data = new URLSearchParams({ '_wp_http': wp_http_step1 });
-    const responseStep1 = await session.post(action_url_step1, step1Data, {
-      headers: { 'Referer': sidUrl, 'Content-Type': 'application/x-www-form-urlencoded' }
-    });
-
-    // Step 2: Parse verification page for second form
-    console.log("  [SID] Step 2: Parsing verification page...");
-    $ = cheerio.load(responseStep1.data);
-    const verificationForm = $('#landing');
-    const action_url_step2 = verificationForm.attr('action');
-    const wp_http2 = verificationForm.find('input[name="_wp_http2"]').val();
-    const token = verificationForm.find('input[name="token"]').val();
-
-    if (!action_url_step2) {
-      console.error("  [SID] Error: Could not find verification form.");
-      return null;
-    }
-
-    // Step 3: POST to the verification URL
-    console.log("  [SID] Step 3: Submitting verification...");
-    const step2Data = new URLSearchParams({ '_wp_http2': wp_http2, 'token': token });
-    const responseStep2 = await session.post(action_url_step2, step2Data, {
-      headers: { 'Referer': responseStep1.request.res.responseUrl, 'Content-Type': 'application/x-www-form-urlencoded' }
-    });
-
-    // Step 4: Find dynamic cookie and link from JavaScript
-    console.log("  [SID] Step 4: Parsing final page for JS data...");
-    let finalLinkPath = null;
-    let cookieName = null;
-    let cookieValue = null;
-
-    const scriptContent = responseStep2.data;
-    const cookieMatch = scriptContent.match(/s_343\('([^']+)',\s*'([^']+)'/);
-    const linkMatch = scriptContent.match(/c\.setAttribute\("href",\s*"([^"]+)"\)/);
-    
-    if (cookieMatch) {
-      cookieName = cookieMatch[1].trim();
-      cookieValue = cookieMatch[2].trim();
-    }
-    if (linkMatch) {
-      finalLinkPath = linkMatch[1].trim();
-    }
-
-    if (!finalLinkPath || !cookieName || !cookieValue) {
-      console.error("  [SID] Error: Could not extract dynamic cookie/link from JS.");
-      return null;
-    }
-    
-    const finalUrl = new URL(finalLinkPath, origin).href;
-    console.log(`  [SID] Dynamic link found: ${finalUrl}`);
-    console.log(`  [SID] Dynamic cookie found: ${cookieName}`);
-
-    // Step 5: Set cookie and make final request
-    console.log("  [SID] Step 5: Setting cookie and making final request...");
-    await jar.setCookie(`${cookieName}=${cookieValue}`, origin);
-    
-    const finalResponse = await session.get(finalUrl, {
-      headers: { 'Referer': responseStep2.request.res.responseUrl }
-    });
-
-    // Step 6: Extract driveleech URL from meta refresh tag
-    $ = cheerio.load(finalResponse.data);
-    const metaRefresh = $('meta[http-equiv="refresh"]');
-    if (metaRefresh.length > 0) {
-        const content = metaRefresh.attr('content');
-        const urlMatch = content.match(/url=(.*)/i);
-        if (urlMatch && urlMatch[1]) {
-            const driveleechUrl = urlMatch[1].replace(/"/g, "").replace(/'/g, "");
-            console.log(`  [SID] SUCCESS! Resolved Driveleech URL: ${driveleechUrl}`);
-            return driveleechUrl;
+        if (!wp_http_step1 || !action_url_step1) {
+            console.error("  [SID] Error: Could not find _wp_http in initial form.");
+            return null;
         }
-    }
 
-    console.error("  [SID] Error: Could not find meta refresh tag with Driveleech URL.");
-    return null;
+        // Step 1: POST to the first form's action URL
+        console.log("  [SID] Step 1: Submitting initial form...");
+        const step1Data = new URLSearchParams({ '_wp_http': wp_http_step1 });
+        const responseStep1 = await session.post(action_url_step1, step1Data, {
+            headers: { 'Referer': sidUrl, 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
 
-  } catch (error) {
-    console.error(`  [SID] Error during SID resolution: ${error.message}`);
-    if (error.response) {
-      console.error(`  [SID] Status: ${error.response.status}`);
+        // Step 2: Parse verification page for second form
+        console.log("  [SID] Step 2: Parsing verification page...");
+        $ = cheerio.load(responseStep1.data);
+        const verificationForm = $('#landing');
+        const action_url_step2 = verificationForm.attr('action');
+        const wp_http2 = verificationForm.find('input[name="_wp_http2"]').val();
+        const token = verificationForm.find('input[name="token"]').val();
+
+        if (!action_url_step2) {
+            console.error("  [SID] Error: Could not find verification form.");
+            return null;
+        }
+
+        // Step 3: POST to the verification URL
+        console.log("  [SID] Step 3: Submitting verification...");
+        const step2Data = new URLSearchParams({ '_wp_http2': wp_http2, 'token': token });
+        const responseStep2 = await session.post(action_url_step2, step2Data, {
+            headers: { 'Referer': responseStep1.request.res.responseUrl, 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+
+        // Step 4: Find dynamic cookie and link from JavaScript
+        console.log("  [SID] Step 4: Parsing final page for JS data...");
+        let finalLinkPath = null;
+        let cookieName = null;
+        let cookieValue = null;
+
+        const scriptContent = responseStep2.data;
+        const cookieMatch = scriptContent.match(/s_343\('([^']+)',\s*'([^']+)'/);
+        const linkMatch = scriptContent.match(/c\.setAttribute\("href",\s*"([^"]+)"\)/);
+
+        if (cookieMatch) {
+            cookieName = cookieMatch[1].trim();
+            cookieValue = cookieMatch[2].trim();
+        }
+        if (linkMatch) {
+            finalLinkPath = linkMatch[1].trim();
+        }
+
+        if (!finalLinkPath || !cookieName || !cookieValue) {
+            console.error("  [SID] Error: Could not extract dynamic cookie/link from JS.");
+            return null;
+        }
+
+        const finalUrl = new URL(finalLinkPath, origin).href;
+        console.log(`  [SID] Dynamic link found: ${finalUrl}`);
+        console.log(`  [SID] Dynamic cookie found: ${cookieName}`);
+
+        // Step 5: Set cookie and make final request
+        console.log("  [SID] Step 5: Setting cookie and making final request...");
+        await jar.setCookie(`${cookieName}=${cookieValue}`, origin);
+
+        const finalResponse = await session.get(finalUrl, {
+            headers: { 'Referer': responseStep2.request.res.responseUrl }
+        });
+
+        // Step 6: Extract driveleech URL from meta refresh tag
+        $ = cheerio.load(finalResponse.data);
+        const metaRefresh = $('meta[http-equiv="refresh"]');
+        if (metaRefresh.length > 0) {
+            const content = metaRefresh.attr('content');
+            const urlMatch = content.match(/url=(.*)/i);
+            if (urlMatch && urlMatch[1]) {
+                const driveleechUrl = urlMatch[1].replace(/"/g, "").replace(/'/g, "");
+                console.log(`  [SID] SUCCESS! Resolved Driveleech URL: ${driveleechUrl}`);
+                return driveleechUrl;
+            }
+        }
+
+        console.error("  [SID] Error: Could not find meta refresh tag with Driveleech URL.");
+        return null;
+
+    } catch (error) {
+        console.error(`  [SID] Error during SID resolution: ${error.message}`);
+        if (error.response) {
+            console.error(`  [SID] Status: ${error.response.status}`);
+        }
+        return null;
     }
-    return null;
-  }
 }
 
 // Resolves driveseed.org links to find download options
@@ -707,28 +707,28 @@ async function resolveDriveseedLink(driveseedUrl) {
         const { data } = await makeRequest(driveseedUrl, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Referer': 'https://links.modpro.blog/', 
+                'Referer': 'https://links.modpro.blog/',
             }
         });
 
         let finalData = data;
         let finalUrl = driveseedUrl;
-        
+
         // Check if there's a JavaScript redirect
         const redirectMatch = data.match(/window\.location\.replace\("([^"]+)"\)/);
         if (redirectMatch && redirectMatch[1]) {
             const finalPath = redirectMatch[1];
             finalUrl = `https://driveseed.org${finalPath}`;
             console.log(`[DramaDrip] JS redirect found. Following to: ${finalUrl}`);
-            
+
             const finalResponse = await makeRequest(finalUrl, {
-                 headers: { 'Referer': driveseedUrl }
+                headers: { 'Referer': driveseedUrl }
             });
             finalData = finalResponse.data;
         } else {
             console.log(`[DramaDrip] No redirect found, treating as final page: ${driveseedUrl}`);
         }
-        
+
         const $ = cheerio.load(finalData);
         const downloadOptions = [];
         let title = null;
@@ -756,7 +756,7 @@ async function resolveDriveseedLink(driveseedUrl) {
             if (type === 'resume' && url && !url.startsWith('http')) {
                 url = `https://driveseed.org${url}`;
             }
-            if(url) downloadOptions.push({ title: buttonTitle, type, url });
+            if (url) downloadOptions.push({ title: buttonTitle, type, url });
         });
 
         console.log(`[DramaDrip] Found ${downloadOptions.length} download options for: ${title}`);
@@ -781,7 +781,7 @@ async function validateVideoUrl(url, timeout = 10000) {
 
     try {
         console.log(`[DramaDrip] Validating URL: ${url.substring(0, 100)}...`);
-        
+
         // Use proxy for URL validation if enabled
         let response;
         if (DRAMADRIP_PROXY_URL) {
@@ -803,7 +803,7 @@ async function validateVideoUrl(url, timeout = 10000) {
                 }
             });
         }
-        
+
         // Check if status is OK (200-299) or partial content (206)
         if (response.status >= 200 && response.status < 400) {
             console.log(`[DramaDrip] ✓ URL validation successful (${response.status})`);
@@ -826,12 +826,12 @@ async function resolveFinalLink(downloadOption) {
                 const urlObject = new URL(downloadOption.url);
                 const keysParam = urlObject.searchParams.get('url');
                 if (!keysParam) return null;
-                
+
                 let response;
                 const videoSeedApiUrl = 'https://video-seed.pro/api';
                 const postData = `keys=${keysParam}`;
                 const headers = { 'Content-Type': 'application/x-www-form-urlencoded', 'x-token': 'video-seed.pro' };
-                
+
                 if (DRAMADRIP_PROXY_URL) {
                     const proxiedApiUrl = `${DRAMADRIP_PROXY_URL}${encodeURIComponent(videoSeedApiUrl)}`;
                     console.log(`[DramaDrip] Making proxied POST request to video-seed.pro API`);
@@ -839,7 +839,7 @@ async function resolveFinalLink(downloadOption) {
                 } else {
                     response = await axios.post(videoSeedApiUrl, postData, { headers });
                 }
-                
+
                 return response.data ? response.data.url : null;
 
             case 'resume':
@@ -848,11 +848,11 @@ async function resolveFinalLink(downloadOption) {
 
             case 'worker':
                 const workerJar = new CookieJar();
-                
+
                 // Create session with proxy support
                 const workerSession = await createProxiedSession(workerJar);
                 const { data: pageHtml } = await workerSession.get(downloadOption.url);
-                
+
                 const scriptContent = pageHtml.match(/<script type="text\/javascript">([\s\S]*?)<\/script>/g).find(s => s.includes("formData.append('token'"));
                 if (!scriptContent) return null;
 
@@ -879,7 +879,7 @@ async function getDramaDripStreams(tmdbId, mediaType, seasonNum, episodeNum) {
 
     try {
         const cacheKey = `dramadrip_final_v15_${tmdbId}_${mediaType}${seasonNum ? `_s${seasonNum}e${episodeNum}` : ''}`;
-        
+
         // 1. Check cache for resolved intermediate links
         let cachedLinks = await getFromCache(cacheKey);
         if (cachedLinks && cachedLinks.length > 0) {
@@ -898,41 +898,41 @@ async function getDramaDripStreams(tmdbId, mediaType, seasonNum, episodeNum) {
 
             // --- ASIAN CONTENT FILTERING ---
             const asianCountries = [
-                'JP', 'KR', 'CN', 'TH', 'TW', 'HK', 'SG', 'MY', 'ID', 'PH', 
+                'JP', 'KR', 'CN', 'TH', 'TW', 'HK', 'SG', 'MY', 'ID', 'PH',
                 'VN', 'IN', 'BD', 'LK', 'NP', 'BT', 'MM', 'KH', 'LA', 'BN',
                 'MN', 'KZ', 'UZ', 'KG', 'TJ', 'TM', 'AF', 'PK', 'MV', 'MO'
             ];
-            
+
             const asianLanguages = [
-                'ja', 'ko', 'zh', 'th', 'hi', 'ta', 'te', 'bn', 'ur', 'vi', 
+                'ja', 'ko', 'zh', 'th', 'hi', 'ta', 'te', 'bn', 'ur', 'vi',
                 'id', 'ms', 'tl', 'my', 'km', 'lo', 'si', 'ne', 'dz', 'mn'
             ];
-            
+
             // Primary indicators (most reliable)
             const originCountries = tmdbData.origin_country || [];
             const productionCountries = tmdbData.production_countries?.map(c => c.iso_3166_1) || [];
             const allCountries = [...new Set([...originCountries, ...productionCountries])];
             const originalLanguage = tmdbData.original_language;
-            
+
             // Check primary indicators first
             const isPrimaryAsianCountry = allCountries.some(country => asianCountries.includes(country));
             const isPrimaryAsianLanguage = asianLanguages.includes(originalLanguage);
-            
+
             // Secondary indicator (less reliable - only use if primary indicators are inconclusive)
             const spokenLanguages = tmdbData.spoken_languages?.map(l => l.iso_639_1) || [];
             const hasAsianSpokenLanguage = spokenLanguages.some(lang => asianLanguages.includes(lang));
-            
+
             // Strict filtering logic:
             // 1. If primary country is non-Asian (US, GB, etc.), reject even if has Asian spoken languages
             // 2. Only accept if primary country OR primary language is Asian
             // 3. Use spoken languages only if no clear primary indicators exist
-            
+
             const nonAsianMajorCountries = ['US', 'GB', 'CA', 'AU', 'FR', 'DE', 'IT', 'ES', 'RU', 'BR', 'MX'];
             const isPrimaryNonAsian = allCountries.some(country => nonAsianMajorCountries.includes(country));
-            
+
             let isAsianContent = false;
             let reason = '';
-            
+
             if (isPrimaryNonAsian && !isPrimaryAsianCountry) {
                 // Definitely non-Asian (e.g., US movie with some Chinese dialogue)
                 isAsianContent = false;
@@ -953,13 +953,13 @@ async function getDramaDripStreams(tmdbId, mediaType, seasonNum, episodeNum) {
                 isAsianContent = false;
                 reason = `No clear Asian indicators (Countries: ${allCountries.join(', ') || 'None'}, Original: ${originalLanguage || 'None'})`;
             }
-            
+
             if (!isAsianContent) {
                 console.log(`[DramaDrip] Skipping non-Asian content: "${title}" - ${reason}`);
                 await saveToCache(cacheKey, []); // Cache empty result
                 return [];
             }
-            
+
             console.log(`[DramaDrip] ✓ Asian content detected: "${title}" - ${reason}`);
             console.log(`[DramaDrip] Searching for: "${title}" (${year})`);
             const searchResults = await searchDramaDrip(title);
@@ -968,7 +968,7 @@ async function getDramaDripStreams(tmdbId, mediaType, seasonNum, episodeNum) {
             // --- NEW: Use string similarity to find the best match ---
             const titles = searchResults.map(r => r.title);
             const bestMatch = findBestMatch(title, titles);
-            
+
             console.log(`[DramaDrip] Best match for "${title}" is "${bestMatch.bestMatch.target}" with a rating of ${bestMatch.bestMatch.rating.toFixed(2)}`);
 
             let selectedResult = null;
@@ -977,7 +977,7 @@ async function getDramaDripStreams(tmdbId, mediaType, seasonNum, episodeNum) {
                 const bestResult = searchResults[bestMatch.bestMatchIndex];
                 // For movies, double-check the year if available
                 if (mediaType === 'movie' && year && bestResult.year && bestResult.year !== year) {
-                     console.log(`[DramaDrip] Similarity match found, but year (${bestResult.year}) does not match expected year (${year}). Rejecting.`);
+                    console.log(`[DramaDrip] Similarity match found, but year (${bestResult.year}) does not match expected year (${year}). Rejecting.`);
                 } else {
                     selectedResult = bestResult;
                 }
@@ -992,7 +992,7 @@ async function getDramaDripStreams(tmdbId, mediaType, seasonNum, episodeNum) {
                 selectedResult = searchResults.find(r => {
                     const lowerCaseResultTitle = r.title.toLowerCase();
                     if (!titleRegex.test(lowerCaseResultTitle)) return false;
-                    
+
                     if (mediaType === 'movie' && year && r.year) {
                         return r.year === year;
                     } else if (mediaType === 'tv') {
@@ -1008,13 +1008,13 @@ async function getDramaDripStreams(tmdbId, mediaType, seasonNum, episodeNum) {
                 console.log(`[DramaDrip] All matching attempts failed for "${title}" (${year})`);
                 return [];
             }
-    
+
             console.log(`[DramaDrip] Selected result: "${selectedResult.title}" (${selectedResult.url})`);
             const extractedContent = await extractDramaDripLinks(selectedResult.url);
-            if(!extractedContent) return [];
+            if (!extractedContent) return [];
 
             let qualitiesToResolve = [];
-            if(mediaType === 'tv' && extractedContent.type === 'tv') {
+            if (mediaType === 'tv' && extractedContent.type === 'tv') {
                 const targetSeason = extractedContent.data.find(s => s.seasonTitle.includes(`Season ${seasonNum}`) && !s.seasonTitle.toLowerCase().includes('zip'));
                 if (targetSeason) {
                     qualitiesToResolve = targetSeason.qualities.filter(q => !q.quality.includes('480p'));
@@ -1058,7 +1058,7 @@ async function getDramaDripStreams(tmdbId, mediaType, seasonNum, episodeNum) {
                     return null;
                 }
             });
-            
+
             cachedLinks = (await Promise.all(resolutionPromises)).filter(Boolean);
 
             // 4. Save to cache
@@ -1115,7 +1115,7 @@ async function getDramaDripStreams(tmdbId, mediaType, seasonNum, episodeNum) {
                     if (type === 'resume' && url && !url.startsWith('http')) {
                         url = `https://driveseed.org${url}`;
                     }
-                    if(url) downloadOptions.push({ title: buttonTitle, type, url });
+                    if (url) downloadOptions.push({ title: buttonTitle, type, url });
                 });
 
                 // Use shared util to extract final link from file page
@@ -1150,7 +1150,7 @@ async function getDramaDripStreams(tmdbId, mediaType, seasonNum, episodeNum) {
 
         let streams = (await Promise.all(streamPromises)).filter(Boolean);
         console.log(`[DramaDrip] Found ${streams.length} streams.`);
-        
+
         // Sort streams by size, then quality before returning
         streams.sort((a, b) => {
             const sizeA = parseSize(a.size);
@@ -1171,4 +1171,7 @@ async function getDramaDripStreams(tmdbId, mediaType, seasonNum, episodeNum) {
     }
 }
 
-module.exports = { getDramaDripStreams };
+module.exports = {
+    getDramaDripStreams,
+    getStreams: getDramaDripStreams
+};

@@ -366,4 +366,7 @@ async function get4KHDHubStreams(tmdbId, type, season = null, episode = null) {
     return streams;
 }
 
-module.exports = { get4KHDHubStreams };
+module.exports = {
+    get4KHDHubStreams,
+    getStreams: get4KHDHubStreams
+};

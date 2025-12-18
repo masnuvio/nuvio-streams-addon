@@ -445,6 +445,7 @@ const getStreamsFromTmdbId = async (tmdbType, tmdbId, seasonNum = null, episodeN
 // Export required functions
 module.exports = {
     getStreamsFromTmdbId,
+    getStreams: getStreamsFromTmdbId, // Add wrapper for consistency
     parseQualityFromLabel,
     convertImdbToTmdb,
     sortStreamsByQuality
