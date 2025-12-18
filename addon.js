@@ -140,6 +140,14 @@ console.log(`[addon.js] MoviesMod provider fetching enabled: ${ENABLE_MOVIESMOD_
 const ENABLE_TOPMOVIES_PROVIDER = process.env.ENABLE_TOPMOVIES_PROVIDER !== 'false'; // Defaults to true if not set or not 'false'
 console.log(`[addon.js] TopMovies provider fetching enabled: ${ENABLE_TOPMOVIES_PROVIDER}`);
 
+// NEW: Read environment variable for VidSrc
+const ENABLE_VIDSRC_PROVIDER = process.env.ENABLE_VIDSRC_PROVIDER !== 'false';
+console.log(`[addon.js] VidSrc provider fetching enabled: ${ENABLE_VIDSRC_PROVIDER}`);
+
+// NEW: Read environment variable for Vixsrc
+const ENABLE_VIXSRC_PROVIDER = process.env.ENABLE_VIXSRC_PROVIDER !== 'false';
+console.log(`[addon.js] Vixsrc provider fetching enabled: ${ENABLE_VIXSRC_PROVIDER}`);
+
 // NEW: Read environment variable for SoaperTV
 const ENABLE_SOAPERTV_PROVIDER = process.env.ENABLE_SOAPERTV_PROVIDER !== 'false'; // Defaults to true
 console.log(`[addon.js] SoaperTV provider fetching enabled: ${ENABLE_SOAPERTV_PROVIDER}`);
