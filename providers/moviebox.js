@@ -9,6 +9,11 @@ const TMDB_API_KEY = "68e094699525b18a70bab2f86b1fa706";
 
 // Get PRIMARY_KEY from environment
 const PRIMARY_KEY = process.env.MOVIEBOX_PRIMARY_KEY;
+if (!PRIMARY_KEY) {
+    console.error('[MovieBox] MOVIEBOX_PRIMARY_KEY is missing from environment variables!');
+} else {
+    console.log('[MovieBox] MOVIEBOX_PRIMARY_KEY is loaded.');
+}
 
 function md5Hex(data) {
     return CryptoJS.MD5(data).toString(CryptoJS.enc.Hex);
@@ -78,7 +83,7 @@ function makeApiRequest(url, method = 'GET', body = '') {
         options.body = body;
     }
 
-    return fetch(url, options).then(function(res) {
+    return fetch(url, options).then(function (res) {
         if (!res.ok) {
             console.error(`[MovieBox] API request failed: ${res.status}`);
         }
@@ -90,7 +95,7 @@ function search(keyword) {
     const url = `${BASE_URL}/subject-api/search/v2`;
     const body = JSON.stringify({ page: 1, perPage: 10, keyword });
     return makeApiRequest(url, 'POST', body)
-        .then(function(res) {
+        .then(function (res) {
             const results = res.data?.results || [];
             const subjects = [];
             for (const result of results) {
@@ -108,7 +113,7 @@ function getPlayInfo(subjectId, season, episode) {
         url = `${BASE_URL}/subject-api/play-info?subjectId=${subjectId}`;
     }
 
-    return makeApiRequest(url).then(function(res) {
+    return makeApiRequest(url).then(function (res) {
         const data = res?.data || {};
         let streams = data.streams || [];
         if (!streams || streams.length === 0) {
@@ -119,7 +124,7 @@ function getPlayInfo(subjectId, season, episode) {
             if (Array.isArray(s.resolutions)) {
                 // keep as-is
             } else if (typeof s.resolutions === 'string') {
-                s.resolutions = s.resolutions.split(',').map(function(v) {
+                s.resolutions = s.resolutions.split(',').map(function (v) {
                     return v.trim();
                 }).filter(Boolean);
             } else if (s.resolution) {
@@ -160,24 +165,24 @@ function extractQualityFields(stream) {
 
 function formatQuality(qualityString) {
     if (!qualityString) return 'Unknown';
-    
+
     // If it already contains 'p', return as is
     if (qualityString.includes('p')) {
         return qualityString;
     }
-    
+
     // If it's a number (like "1080", "720"), add 'p'
     const numberMatch = qualityString.match(/^(\d{3,4})$/);
     if (numberMatch) {
         return `${numberMatch[1]}p`;
     }
-    
+
     // If it's a resolution like "1920x1080", extract height and add 'p'
     const resolutionMatch = qualityString.match(/^\d+x(\d{3,4})$/);
     if (resolutionMatch) {
         return `${resolutionMatch[1]}p`;
     }
-    
+
     // Return as is for other formats
     return qualityString;
 }
@@ -343,13 +348,13 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
     const tmdbUrl = `https://api.themoviedb.org/3/${mediaType === 'tv' ? 'tv' : 'movie'}/${tmdbId}?api_key=${TMDB_API_KEY}`;
 
     return fetch(tmdbUrl)
-        .then(function(res) {
+        .then(function (res) {
             if (!res.ok) {
                 throw new Error(`TMDB API request failed: ${res.status}`);
             }
             return res.json();
         })
-        .then(function(tmdbData) {
+        .then(function (tmdbData) {
             const title = mediaType === 'tv' ? tmdbData.name : tmdbData.title;
             const year = mediaType === 'tv'
                 ? (tmdbData.first_air_date || '').substring(0, 4)
@@ -359,11 +364,11 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
                 throw new Error('Could not extract title from TMDB response');
             }
             console.log(`[MovieBox] Searching for: "${title}" (${year})`);
-            return search(title).then(function(results) {
+            return search(title).then(function (results) {
                 return { results: results, title: title, year: year, mediaType: mediaType, seasonNum: seasonNum, episodeNum: episodeNum };
             });
         })
-        .then(function(data) {
+        .then(function (data) {
             const { results, title, mediaType, seasonNum, episodeNum } = data;
 
             if (!results || results.length === 0) {
@@ -372,7 +377,7 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
             }
 
             // Enhanced filtering with confidence levels
-            const filteredResults = results.map(function(result) {
+            const filteredResults = results.map(function (result) {
                 const matchInfo = isRelevantMatch(title, result.title);
                 return {
                     ...result,
@@ -382,7 +387,7 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
                 };
             });
 
-            const relevantResults = filteredResults.filter(function(result) {
+            const relevantResults = filteredResults.filter(function (result) {
                 return result.isRelevant;
             });
 
@@ -390,7 +395,7 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
 
             // Log confidence levels for debugging
             const confidenceGroups = {};
-            relevantResults.forEach(function(result) {
+            relevantResults.forEach(function (result) {
                 const confidence = result.matchConfidence;
                 if (!confidenceGroups[confidence]) {
                     confidenceGroups[confidence] = [];
@@ -398,7 +403,7 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
                 confidenceGroups[confidence].push(result.title);
             });
 
-            Object.keys(confidenceGroups).forEach(function(confidence) {
+            Object.keys(confidenceGroups).forEach(function (confidence) {
                 console.log(`[MovieBox] ${confidence} confidence: ${confidenceGroups[confidence].length} results`);
             });
 
@@ -408,7 +413,7 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
             }
 
             // Sort by confidence and score for better processing order
-            relevantResults.sort(function(a, b) {
+            relevantResults.sort(function (a, b) {
                 const confidenceOrder = { 'high': 3, 'medium': 2, 'low': 1 };
                 const aConfidence = confidenceOrder[a.matchConfidence] || 0;
                 const bConfidence = confidenceOrder[b.matchConfidence] || 0;
@@ -420,7 +425,7 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
             });
 
             // Process all relevant results (different languages/versions)
-            const promises = relevantResults.map(function(result, index) {
+            const promises = relevantResults.map(function (result, index) {
                 console.log(`[MovieBox] Processing result ${index + 1}/${relevantResults.length}: ${result.title} (${result.matchConfidence} confidence, score: ${result.matchScore.toFixed(3)})`);
 
                 if (mediaType === 'tv') {
@@ -429,19 +434,19 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
                         return [];
                     }
                     return getPlayInfo(result.subjectId, seasonNum, episodeNum)
-                        .then(function(streams) {
+                        .then(function (streams) {
                             return { subject: result, streams: streams };
                         })
-                        .catch(function(error) {
+                        .catch(function (error) {
                             console.error(`[MovieBox] Error processing TV result ${result.title}: ${error.message}`);
                             return { subject: result, streams: [] };
                         });
                 } else {
                     return getPlayInfo(result.subjectId)
-                        .then(function(streams) {
+                        .then(function (streams) {
                             return { subject: result, streams: streams };
                         })
-                        .catch(function(error) {
+                        .catch(function (error) {
                             console.error(`[MovieBox] Error processing movie result ${result.title}: ${error.message}`);
                             return { subject: result, streams: [] };
                         });
@@ -450,7 +455,7 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
 
             return Promise.all(promises);
         })
-        .then(function(subjectsWithStreams) {
+        .then(function (subjectsWithStreams) {
             if (!subjectsWithStreams || subjectsWithStreams.length === 0) {
                 console.log('[MovieBox] No streams found for any results.');
                 return [];
@@ -459,7 +464,7 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
             const allStreams = [];
 
             // Process each subject and its streams
-            subjectsWithStreams.forEach(function(subjectData) {
+            subjectsWithStreams.forEach(function (subjectData) {
                 const { subject, streams } = subjectData;
 
                 if (!streams || streams.length === 0) {
@@ -470,9 +475,9 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
                 console.log(`[MovieBox] Processing ${streams.length} streams for: ${subject.title}`);
 
                 // Process each stream for this subject
-                streams.forEach(function(s) {
+                streams.forEach(function (s) {
                     const qualities = extractQualityFields(s);
-                    const rawQuality = qualities.find(function(q) { return q.includes('p') || q.includes('x'); }) || qualities[0] || 'Unknown';
+                    const rawQuality = qualities.find(function (q) { return q.includes('p') || q.includes('x'); }) || qualities[0] || 'Unknown';
                     const quality = formatQuality(rawQuality);
                     const audioTracks = s.audioTracks || [];
 
@@ -480,11 +485,11 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
                     let languageInfo = '';
                     const subjectTitle = subject.title || '';
                     const streamFormat = s.format || '';
-                    
+
                     // Check audio tracks first (most reliable source)
                     if (audioTracks.length > 0) {
                         const audioTrackString = audioTracks.join(' ').toLowerCase();
-                        
+
                         // Common audio track language patterns
                         const audioLanguagePatterns = [
                             { pattern: /hindi/i, name: 'Hindi' },
@@ -528,7 +533,7 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
                             { pattern: /hebrew/i, name: 'Hebrew' },
                             { pattern: /persian/i, name: 'Persian' }
                         ];
-                        
+
                         for (const audioPattern of audioLanguagePatterns) {
                             if (audioPattern.pattern.test(audioTrackString)) {
                                 languageInfo = audioPattern.name;
@@ -537,11 +542,11 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
                             }
                         }
                     }
-                    
+
                     // If no language found in audio tracks, check stream format
                     if (!languageInfo && streamFormat) {
                         const formatString = streamFormat.toLowerCase();
-                        
+
                         const formatLanguagePatterns = [
                             { pattern: /hindi/i, name: 'Hindi' },
                             { pattern: /english/i, name: 'English' },
@@ -584,7 +589,7 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
                             { pattern: /hebrew/i, name: 'Hebrew' },
                             { pattern: /persian/i, name: 'Persian' }
                         ];
-                        
+
                         for (const formatPattern of formatLanguagePatterns) {
                             if (formatPattern.pattern.test(formatString)) {
                                 languageInfo = formatPattern.name;
@@ -593,114 +598,114 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
                             }
                         }
                     }
-                    
+
                     // If still no language found, check subject title
                     if (!languageInfo) {
                         // Common language patterns in MovieBox titles - comprehensive list
-                    const languagePatterns = [
-                        // Indian Languages - Square brackets format [Language]
-                        { pattern: /\[([^\]]*hindi[^\]]*)\]/i, name: 'Hindi' },
-                        { pattern: /\[([^\]]*english[^\]]*)\]/i, name: 'English' },
-                        { pattern: /\[([^\]]*tamil[^\]]*)\]/i, name: 'Tamil' },
-                        { pattern: /\[([^\]]*telugu[^\]]*)\]/i, name: 'Telugu' },
-                        { pattern: /\[([^\]]*malayalam[^\]]*)\]/i, name: 'Malayalam' },
-                        { pattern: /\[([^\]]*kannada[^\]]*)\]/i, name: 'Kannada' },
-                        { pattern: /\[([^\]]*bengali[^\]]*)\]/i, name: 'Bengali' },
-                        { pattern: /\[([^\]]*punjabi[^\]]*)\]/i, name: 'Punjabi' },
-                        { pattern: /\[([^\]]*gujarati[^\]]*)\]/i, name: 'Gujarati' },
-                        { pattern: /\[([^\]]*marathi[^\]]*)\]/i, name: 'Marathi' },
-                        { pattern: /\[([^\]]*odia[^\]]*)\]/i, name: 'Odia' },
-                        { pattern: /\[([^\]]*assamese[^\]]*)\]/i, name: 'Assamese' },
-                        { pattern: /\[([^\]]*bhojpuri[^\]]*)\]/i, name: 'Bhojpuri' },
-                        { pattern: /\[([^\]]*urdu[^\]]*)\]/i, name: 'Urdu' },
-                        { pattern: /\[([^\]]*nepali[^\]]*)\]/i, name: 'Nepali' },
-                        
-                        // International Languages - Square brackets format [Language]
-                        { pattern: /\[([^\]]*spanish[^\]]*)\]/i, name: 'Spanish' },
-                        { pattern: /\[([^\]]*french[^\]]*)\]/i, name: 'French' },
-                        { pattern: /\[([^\]]*german[^\]]*)\]/i, name: 'German' },
-                        { pattern: /\[([^\]]*japanese[^\]]*)\]/i, name: 'Japanese' },
-                        { pattern: /\[([^\]]*korean[^\]]*)\]/i, name: 'Korean' },
-                        { pattern: /\[([^\]]*chinese[^\]]*)\]/i, name: 'Chinese' },
-                        { pattern: /\[([^\]]*arabic[^\]]*)\]/i, name: 'Arabic' },
-                        { pattern: /\[([^\]]*portuguese[^\]]*)\]/i, name: 'Portuguese' },
-                        { pattern: /\[([^\]]*russian[^\]]*)\]/i, name: 'Russian' },
-                        { pattern: /\[([^\]]*italian[^\]]*)\]/i, name: 'Italian' },
-                        { pattern: /\[([^\]]*dutch[^\]]*)\]/i, name: 'Dutch' },
-                        { pattern: /\[([^\]]*thai[^\]]*)\]/i, name: 'Thai' },
-                        { pattern: /\[([^\]]*vietnamese[^\]]*)\]/i, name: 'Vietnamese' },
-                        { pattern: /\[([^\]]*indonesian[^\]]*)\]/i, name: 'Indonesian' },
-                        { pattern: /\[([^\]]*malay[^\]]*)\]/i, name: 'Malay' },
-                        { pattern: /\[([^\]]*filipino[^\]]*)\]/i, name: 'Filipino' },
-                        { pattern: /\[([^\]]*turkish[^\]]*)\]/i, name: 'Turkish' },
-                        { pattern: /\[([^\]]*polish[^\]]*)\]/i, name: 'Polish' },
-                        { pattern: /\[([^\]]*swedish[^\]]*)\]/i, name: 'Swedish' },
-                        { pattern: /\[([^\]]*norwegian[^\]]*)\]/i, name: 'Norwegian' },
-                        { pattern: /\[([^\]]*danish[^\]]*)\]/i, name: 'Danish' },
-                        { pattern: /\[([^\]]*finnish[^\]]*)\]/i, name: 'Finnish' },
-                        { pattern: /\[([^\]]*greek[^\]]*)\]/i, name: 'Greek' },
-                        { pattern: /\[([^\]]*hebrew[^\]]*)\]/i, name: 'Hebrew' },
-                        { pattern: /\[([^\]]*persian[^\]]*)\]/i, name: 'Persian' },
-                        
-                        // Fallback patterns for parentheses format (Language) - in case some titles use this
-                        { pattern: /\(([^)]*hindi[^)]*)\)/i, name: 'Hindi' },
-                        { pattern: /\(([^)]*english[^)]*)\)/i, name: 'English' },
-                        { pattern: /\(([^)]*tamil[^)]*)\)/i, name: 'Tamil' },
-                        { pattern: /\(([^)]*telugu[^)]*)\)/i, name: 'Telugu' },
-                        { pattern: /\(([^)]*malayalam[^)]*)\)/i, name: 'Malayalam' },
-                        { pattern: /\(([^)]*kannada[^)]*)\)/i, name: 'Kannada' },
-                        { pattern: /\(([^)]*bengali[^)]*)\)/i, name: 'Bengali' },
-                        { pattern: /\(([^)]*punjabi[^)]*)\)/i, name: 'Punjabi' },
-                        { pattern: /\(([^)]*gujarati[^)]*)\)/i, name: 'Gujarati' },
-                        { pattern: /\(([^)]*marathi[^)]*)\)/i, name: 'Marathi' },
-                        { pattern: /\(([^)]*odia[^)]*)\)/i, name: 'Odia' },
-                        { pattern: /\(([^)]*assamese[^)]*)\)/i, name: 'Assamese' },
-                        { pattern: /\(([^)]*bhojpuri[^)]*)\)/i, name: 'Bhojpuri' },
-                        { pattern: /\(([^)]*urdu[^)]*)\)/i, name: 'Urdu' },
-                        { pattern: /\(([^)]*nepali[^)]*)\)/i, name: 'Nepali' },
-                        
-                        // Language codes (common abbreviations) - keep these as they are
-                        { pattern: /\b(hi|hin)\b/i, name: 'Hindi' },
-                        { pattern: /\b(en|eng)\b/i, name: 'English' },
-                        { pattern: /\b(ta|tam)\b/i, name: 'Tamil' },
-                        { pattern: /\b(te|tel)\b/i, name: 'Telugu' },
-                        { pattern: /\b(ml|mal)\b/i, name: 'Malayalam' },
-                        { pattern: /\b(kn|kan)\b/i, name: 'Kannada' },
-                        { pattern: /\b(bn|ben)\b/i, name: 'Bengali' },
-                        { pattern: /\b(pa|pan)\b/i, name: 'Punjabi' },
-                        { pattern: /\b(gu|guj)\b/i, name: 'Gujarati' },
-                        { pattern: /\b(mr|mar)\b/i, name: 'Marathi' },
-                        { pattern: /\b(or|ori)\b/i, name: 'Odia' },
-                        { pattern: /\b(as|asm)\b/i, name: 'Assamese' },
-                        { pattern: /\b(bho)\b/i, name: 'Bhojpuri' },
-                        { pattern: /\b(es|spa)\b/i, name: 'Spanish' },
-                        { pattern: /\b(fr|fre)\b/i, name: 'French' },
-                        { pattern: /\b(de|ger)\b/i, name: 'German' },
-                        { pattern: /\b(ja|jpn)\b/i, name: 'Japanese' },
-                        { pattern: /\b(ko|kor)\b/i, name: 'Korean' },
-                        { pattern: /\b(zh|chi)\b/i, name: 'Chinese' },
-                        { pattern: /\b(ar|ara)\b/i, name: 'Arabic' },
-                        { pattern: /\b(pt|por)\b/i, name: 'Portuguese' },
-                        { pattern: /\b(ru|rus)\b/i, name: 'Russian' },
-                        { pattern: /\b(it|ita)\b/i, name: 'Italian' },
-                        { pattern: /\b(nl|dut)\b/i, name: 'Dutch' },
-                        { pattern: /\b(th|tha)\b/i, name: 'Thai' },
-                        { pattern: /\b(vi|vie)\b/i, name: 'Vietnamese' },
-                        { pattern: /\b(id|ind)\b/i, name: 'Indonesian' },
-                        { pattern: /\b(ms|may)\b/i, name: 'Malay' },
-                        { pattern: /\b(tl|fil)\b/i, name: 'Filipino' },
-                        { pattern: /\b(tr|tur)\b/i, name: 'Turkish' },
-                        { pattern: /\b(pl|pol)\b/i, name: 'Polish' },
-                        { pattern: /\b(sv|swe)\b/i, name: 'Swedish' },
-                        { pattern: /\b(no|nor)\b/i, name: 'Norwegian' },
-                        { pattern: /\b(da|dan)\b/i, name: 'Danish' },
-                        { pattern: /\b(fi|fin)\b/i, name: 'Finnish' },
-                        { pattern: /\b(el|gre)\b/i, name: 'Greek' },
-                        { pattern: /\b(he|heb)\b/i, name: 'Hebrew' },
-                        { pattern: /\b(fa|per)\b/i, name: 'Persian' },
-                        { pattern: /\b(ur|urd)\b/i, name: 'Urdu' },
-                        { pattern: /\b(ne|nep)\b/i, name: 'Nepali' }
-                    ];
+                        const languagePatterns = [
+                            // Indian Languages - Square brackets format [Language]
+                            { pattern: /\[([^\]]*hindi[^\]]*)\]/i, name: 'Hindi' },
+                            { pattern: /\[([^\]]*english[^\]]*)\]/i, name: 'English' },
+                            { pattern: /\[([^\]]*tamil[^\]]*)\]/i, name: 'Tamil' },
+                            { pattern: /\[([^\]]*telugu[^\]]*)\]/i, name: 'Telugu' },
+                            { pattern: /\[([^\]]*malayalam[^\]]*)\]/i, name: 'Malayalam' },
+                            { pattern: /\[([^\]]*kannada[^\]]*)\]/i, name: 'Kannada' },
+                            { pattern: /\[([^\]]*bengali[^\]]*)\]/i, name: 'Bengali' },
+                            { pattern: /\[([^\]]*punjabi[^\]]*)\]/i, name: 'Punjabi' },
+                            { pattern: /\[([^\]]*gujarati[^\]]*)\]/i, name: 'Gujarati' },
+                            { pattern: /\[([^\]]*marathi[^\]]*)\]/i, name: 'Marathi' },
+                            { pattern: /\[([^\]]*odia[^\]]*)\]/i, name: 'Odia' },
+                            { pattern: /\[([^\]]*assamese[^\]]*)\]/i, name: 'Assamese' },
+                            { pattern: /\[([^\]]*bhojpuri[^\]]*)\]/i, name: 'Bhojpuri' },
+                            { pattern: /\[([^\]]*urdu[^\]]*)\]/i, name: 'Urdu' },
+                            { pattern: /\[([^\]]*nepali[^\]]*)\]/i, name: 'Nepali' },
+
+                            // International Languages - Square brackets format [Language]
+                            { pattern: /\[([^\]]*spanish[^\]]*)\]/i, name: 'Spanish' },
+                            { pattern: /\[([^\]]*french[^\]]*)\]/i, name: 'French' },
+                            { pattern: /\[([^\]]*german[^\]]*)\]/i, name: 'German' },
+                            { pattern: /\[([^\]]*japanese[^\]]*)\]/i, name: 'Japanese' },
+                            { pattern: /\[([^\]]*korean[^\]]*)\]/i, name: 'Korean' },
+                            { pattern: /\[([^\]]*chinese[^\]]*)\]/i, name: 'Chinese' },
+                            { pattern: /\[([^\]]*arabic[^\]]*)\]/i, name: 'Arabic' },
+                            { pattern: /\[([^\]]*portuguese[^\]]*)\]/i, name: 'Portuguese' },
+                            { pattern: /\[([^\]]*russian[^\]]*)\]/i, name: 'Russian' },
+                            { pattern: /\[([^\]]*italian[^\]]*)\]/i, name: 'Italian' },
+                            { pattern: /\[([^\]]*dutch[^\]]*)\]/i, name: 'Dutch' },
+                            { pattern: /\[([^\]]*thai[^\]]*)\]/i, name: 'Thai' },
+                            { pattern: /\[([^\]]*vietnamese[^\]]*)\]/i, name: 'Vietnamese' },
+                            { pattern: /\[([^\]]*indonesian[^\]]*)\]/i, name: 'Indonesian' },
+                            { pattern: /\[([^\]]*malay[^\]]*)\]/i, name: 'Malay' },
+                            { pattern: /\[([^\]]*filipino[^\]]*)\]/i, name: 'Filipino' },
+                            { pattern: /\[([^\]]*turkish[^\]]*)\]/i, name: 'Turkish' },
+                            { pattern: /\[([^\]]*polish[^\]]*)\]/i, name: 'Polish' },
+                            { pattern: /\[([^\]]*swedish[^\]]*)\]/i, name: 'Swedish' },
+                            { pattern: /\[([^\]]*norwegian[^\]]*)\]/i, name: 'Norwegian' },
+                            { pattern: /\[([^\]]*danish[^\]]*)\]/i, name: 'Danish' },
+                            { pattern: /\[([^\]]*finnish[^\]]*)\]/i, name: 'Finnish' },
+                            { pattern: /\[([^\]]*greek[^\]]*)\]/i, name: 'Greek' },
+                            { pattern: /\[([^\]]*hebrew[^\]]*)\]/i, name: 'Hebrew' },
+                            { pattern: /\[([^\]]*persian[^\]]*)\]/i, name: 'Persian' },
+
+                            // Fallback patterns for parentheses format (Language) - in case some titles use this
+                            { pattern: /\(([^)]*hindi[^)]*)\)/i, name: 'Hindi' },
+                            { pattern: /\(([^)]*english[^)]*)\)/i, name: 'English' },
+                            { pattern: /\(([^)]*tamil[^)]*)\)/i, name: 'Tamil' },
+                            { pattern: /\(([^)]*telugu[^)]*)\)/i, name: 'Telugu' },
+                            { pattern: /\(([^)]*malayalam[^)]*)\)/i, name: 'Malayalam' },
+                            { pattern: /\(([^)]*kannada[^)]*)\)/i, name: 'Kannada' },
+                            { pattern: /\(([^)]*bengali[^)]*)\)/i, name: 'Bengali' },
+                            { pattern: /\(([^)]*punjabi[^)]*)\)/i, name: 'Punjabi' },
+                            { pattern: /\(([^)]*gujarati[^)]*)\)/i, name: 'Gujarati' },
+                            { pattern: /\(([^)]*marathi[^)]*)\)/i, name: 'Marathi' },
+                            { pattern: /\(([^)]*odia[^)]*)\)/i, name: 'Odia' },
+                            { pattern: /\(([^)]*assamese[^)]*)\)/i, name: 'Assamese' },
+                            { pattern: /\(([^)]*bhojpuri[^)]*)\)/i, name: 'Bhojpuri' },
+                            { pattern: /\(([^)]*urdu[^)]*)\)/i, name: 'Urdu' },
+                            { pattern: /\(([^)]*nepali[^)]*)\)/i, name: 'Nepali' },
+
+                            // Language codes (common abbreviations) - keep these as they are
+                            { pattern: /\b(hi|hin)\b/i, name: 'Hindi' },
+                            { pattern: /\b(en|eng)\b/i, name: 'English' },
+                            { pattern: /\b(ta|tam)\b/i, name: 'Tamil' },
+                            { pattern: /\b(te|tel)\b/i, name: 'Telugu' },
+                            { pattern: /\b(ml|mal)\b/i, name: 'Malayalam' },
+                            { pattern: /\b(kn|kan)\b/i, name: 'Kannada' },
+                            { pattern: /\b(bn|ben)\b/i, name: 'Bengali' },
+                            { pattern: /\b(pa|pan)\b/i, name: 'Punjabi' },
+                            { pattern: /\b(gu|guj)\b/i, name: 'Gujarati' },
+                            { pattern: /\b(mr|mar)\b/i, name: 'Marathi' },
+                            { pattern: /\b(or|ori)\b/i, name: 'Odia' },
+                            { pattern: /\b(as|asm)\b/i, name: 'Assamese' },
+                            { pattern: /\b(bho)\b/i, name: 'Bhojpuri' },
+                            { pattern: /\b(es|spa)\b/i, name: 'Spanish' },
+                            { pattern: /\b(fr|fre)\b/i, name: 'French' },
+                            { pattern: /\b(de|ger)\b/i, name: 'German' },
+                            { pattern: /\b(ja|jpn)\b/i, name: 'Japanese' },
+                            { pattern: /\b(ko|kor)\b/i, name: 'Korean' },
+                            { pattern: /\b(zh|chi)\b/i, name: 'Chinese' },
+                            { pattern: /\b(ar|ara)\b/i, name: 'Arabic' },
+                            { pattern: /\b(pt|por)\b/i, name: 'Portuguese' },
+                            { pattern: /\b(ru|rus)\b/i, name: 'Russian' },
+                            { pattern: /\b(it|ita)\b/i, name: 'Italian' },
+                            { pattern: /\b(nl|dut)\b/i, name: 'Dutch' },
+                            { pattern: /\b(th|tha)\b/i, name: 'Thai' },
+                            { pattern: /\b(vi|vie)\b/i, name: 'Vietnamese' },
+                            { pattern: /\b(id|ind)\b/i, name: 'Indonesian' },
+                            { pattern: /\b(ms|may)\b/i, name: 'Malay' },
+                            { pattern: /\b(tl|fil)\b/i, name: 'Filipino' },
+                            { pattern: /\b(tr|tur)\b/i, name: 'Turkish' },
+                            { pattern: /\b(pl|pol)\b/i, name: 'Polish' },
+                            { pattern: /\b(sv|swe)\b/i, name: 'Swedish' },
+                            { pattern: /\b(no|nor)\b/i, name: 'Norwegian' },
+                            { pattern: /\b(da|dan)\b/i, name: 'Danish' },
+                            { pattern: /\b(fi|fin)\b/i, name: 'Finnish' },
+                            { pattern: /\b(el|gre)\b/i, name: 'Greek' },
+                            { pattern: /\b(he|heb)\b/i, name: 'Hebrew' },
+                            { pattern: /\b(fa|per)\b/i, name: 'Persian' },
+                            { pattern: /\b(ur|urd)\b/i, name: 'Urdu' },
+                            { pattern: /\b(ne|nep)\b/i, name: 'Nepali' }
+                        ];
 
                         // Try to find language information
                         for (const langPattern of languagePatterns) {
@@ -741,7 +746,7 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
             });
 
             // Sort by quality (highest first)
-            allStreams.sort(function(a, b) {
+            allStreams.sort(function (a, b) {
                 const qualityA = parseQualityForSort(a.quality);
                 const qualityB = parseQualityForSort(b.quality);
                 return qualityB - qualityA;
@@ -750,7 +755,7 @@ function getMovieBoxStreams(tmdbId, mediaType = 'movie', seasonNum = null, episo
             console.log(`[MovieBox] Total streams found across all language variants: ${allStreams.length}`);
             return allStreams;
         })
-        .catch(function(error) {
+        .catch(function (error) {
             console.error(`[MovieBox] Error in getMovieBoxStreams: ${error.message}`);
             return []; // Return empty array on error as per Nuvio scraper guidelines
         });

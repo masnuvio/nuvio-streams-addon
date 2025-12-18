@@ -141,94 +141,6 @@ const ENABLE_TOPMOVIES_PROVIDER = process.env.ENABLE_TOPMOVIES_PROVIDER !== 'fal
 console.log(`[addon.js] TopMovies provider fetching enabled: ${ENABLE_TOPMOVIES_PROVIDER}`);
 
 // NEW: Read environment variable for SoaperTV
-const ENABLE_SOAPERTV_PROVIDER = process.env.ENABLE_SOAPERTV_PROVIDER !== 'false'; // Defaults to true
-console.log(`[addon.js] SoaperTV provider fetching enabled: ${ENABLE_SOAPERTV_PROVIDER}`);
-
-
-
-// NEW: Read environment variable for MoviesDrive
-const ENABLE_MOVIESDRIVE_PROVIDER = process.env.ENABLE_MOVIESDRIVE_PROVIDER !== 'false'; // Defaults to true if not set or not 'false'
-console.log(`[addon.js] MoviesDrive provider fetching enabled: ${ENABLE_MOVIESDRIVE_PROVIDER}`);
-
-// NEW: Read environment variable for 4KHDHub
-const ENABLE_4KHDHUB_PROVIDER = process.env.ENABLE_4KHDHUB_PROVIDER !== 'false'; // Defaults to true if not set or not 'false'
-
-// NEW: Read environment variable for VidSrc
-const ENABLE_VIDSRC_PROVIDER = process.env.ENABLE_VIDSRC_PROVIDER !== 'false';
-console.log(`[addon.js] VidSrc provider fetching enabled: ${ENABLE_VIDSRC_PROVIDER}`);
-
-// NEW: Read environment variable for Vixsrc
-const ENABLE_VIXSRC_PROVIDER = process.env.ENABLE_VIXSRC_PROVIDER !== 'false';
-console.log(`[addon.js] Vixsrc provider fetching enabled: ${ENABLE_VIXSRC_PROVIDER}`);
-
-// NEW: Read environment variable for MovieBox
-const ENABLE_MOVIEBOX_PROVIDER = process.env.ENABLE_MOVIEBOX_PROVIDER !== 'false';
-console.log(`[addon.js] MovieBox provider fetching enabled: ${ENABLE_MOVIEBOX_PROVIDER}`);
-
-// NEW: Read environment variable for AnimeKai
-const ENABLE_ANIMEKAI_PROVIDER = process.env.ENABLE_ANIMEKAI_PROVIDER !== 'false';
-console.log(`[addon.js] AnimeKai provider fetching enabled: ${ENABLE_ANIMEKAI_PROVIDER}`);
-
-// NEW: Read environment variable for Cinevibe
-const ENABLE_CINEVIBE_PROVIDER = process.env.ENABLE_CINEVIBE_PROVIDER !== 'false';
-console.log(`[addon.js] Cinevibe provider fetching enabled: ${ENABLE_CINEVIBE_PROVIDER}`);
-
-// NEW: Read environment variable for DahmerMovies
-const ENABLE_DAHMERMOVIES_PROVIDER = process.env.ENABLE_DAHMERMOVIES_PROVIDER !== 'false';
-console.log(`[addon.js] DahmerMovies provider fetching enabled: ${ENABLE_DAHMERMOVIES_PROVIDER}`);
-
-// NEW: Read environment variable for DVDPlay
-const ENABLE_DVDPLAY_PROVIDER = process.env.ENABLE_DVDPLAY_PROVIDER !== 'false';
-console.log(`[addon.js] DVDPlay provider fetching enabled: ${ENABLE_DVDPLAY_PROVIDER}`);
-
-// NEW: Read environment variable for HDHub4u
-const ENABLE_HDHUB4U_PROVIDER = process.env.ENABLE_HDHUB4U_PROVIDER !== 'false';
-console.log(`[addon.js] HDHub4u provider fetching enabled: ${ENABLE_HDHUB4U_PROVIDER}`);
-
-// NEW: Read environment variable for MalluMV
-const ENABLE_MALLUMV_PROVIDER = process.env.ENABLE_MALLUMV_PROVIDER !== 'false';
-console.log(`[addon.js] MalluMV provider fetching enabled: ${ENABLE_MALLUMV_PROVIDER}`);
-
-// NEW: Read environment variable for Mapple
-const ENABLE_MAPPLE_PROVIDER = process.env.ENABLE_MAPPLE_PROVIDER !== 'false';
-console.log(`[addon.js] Mapple provider fetching enabled: ${ENABLE_MAPPLE_PROVIDER}`);
-
-// NEW: Read environment variable for StreamFlix
-const ENABLE_STREAMFLIX_PROVIDER = process.env.ENABLE_STREAMFLIX_PROVIDER !== 'false';
-console.log(`[addon.js] StreamFlix provider fetching enabled: ${ENABLE_STREAMFLIX_PROVIDER}`);
-
-// NEW: Read environment variable for Videasy
-const ENABLE_VIDEASY_PROVIDER = process.env.ENABLE_VIDEASY_PROVIDER !== 'false';
-console.log(`[addon.js] Videasy provider fetching enabled: ${ENABLE_VIDEASY_PROVIDER}`);
-
-// NEW: Read environment variable for VidLink
-const ENABLE_VIDLINK_PROVIDER = process.env.ENABLE_VIDLINK_PROVIDER !== 'false';
-console.log(`[addon.js] VidLink provider fetching enabled: ${ENABLE_VIDLINK_PROVIDER}`);
-
-// NEW: Read environment variable for VidNestAnime
-const ENABLE_VIDNEST_ANIME_PROVIDER = process.env.ENABLE_VIDNEST_ANIME_PROVIDER !== 'false';
-console.log(`[addon.js] VidNestAnime provider fetching enabled: ${ENABLE_VIDNEST_ANIME_PROVIDER}`);
-
-// NEW: Read environment variable for VidNest
-const ENABLE_VIDNEST_PROVIDER = process.env.ENABLE_VIDNEST_PROVIDER !== 'false';
-console.log(`[addon.js] VidNest provider fetching enabled: ${ENABLE_VIDNEST_PROVIDER}`);
-
-// NEW: Read environment variable for VidRock
-const ENABLE_VIDROCK_PROVIDER = process.env.ENABLE_VIDROCK_PROVIDER !== 'false';
-console.log(`[addon.js] VidRock provider fetching enabled: ${ENABLE_VIDROCK_PROVIDER}`);
-
-// NEW: Read environment variable for Watch32
-const ENABLE_WATCH32_PROVIDER = process.env.ENABLE_WATCH32_PROVIDER !== 'false';
-console.log(`[addon.js] Watch32 provider fetching enabled: ${ENABLE_WATCH32_PROVIDER}`);
-
-// NEW: Read environment variable for Xprime
-const ENABLE_XPRIME_PROVIDER = process.env.ENABLE_XPRIME_PROVIDER !== 'false';
-console.log(`[addon.js] Xprime provider fetching enabled: ${ENABLE_XPRIME_PROVIDER}`);
-
-// NEW: Read environment variable for Yflix
-const ENABLE_YFLIX_PROVIDER = process.env.ENABLE_YFLIX_PROVIDER !== 'false';
-console.log(`[addon.js] Yflix provider fetching enabled: ${ENABLE_YFLIX_PROVIDER}`);
-const USE_EXTERNAL_PROVIDERS = process.env.USE_EXTERNAL_PROVIDERS === 'true';
 const EXTERNAL_UHDMOVIES_URL = USE_EXTERNAL_PROVIDERS ? process.env.EXTERNAL_UHDMOVIES_URL : null;
 const EXTERNAL_TOPMOVIES_URL = USE_EXTERNAL_PROVIDERS ? process.env.EXTERNAL_TOPMOVIES_URL : null;
 const EXTERNAL_MOVIESMOD_URL = USE_EXTERNAL_PROVIDERS ? process.env.EXTERNAL_MOVIESMOD_URL : null;
@@ -2006,6 +1918,42 @@ builder.defineStreamHandler(async (args) => {
                 console.error(`[Yflix] Error:`, err.message);
                 return [];
             }
+        },
+
+        // NetMirror provider
+        netmirror: async () => {
+            if (!ENABLE_NETMIRROR_PROVIDER) return [];
+            if (!shouldFetch('netmirror')) return [];
+            try {
+                const cached = await getStreamFromCache('netmirror', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'NetMirror' }));
+
+                console.log(`[NetMirror] Fetching new streams...`);
+                const streams = await getNetMirrorStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('netmirror', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'NetMirror' }));
+            } catch (err) {
+                console.error(`[NetMirror] Error:`, err.message);
+                return [];
+            }
+        },
+
+        // Castle provider
+        castle: async () => {
+            if (!ENABLE_CASTLE_PROVIDER) return [];
+            if (!shouldFetch('castle')) return [];
+            try {
+                const cached = await getStreamFromCache('castle', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'Castle' }));
+
+                console.log(`[Castle] Fetching new streams...`);
+                const streams = await getCastleStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('castle', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'Castle' }));
+            } catch (err) {
+                console.error(`[Castle] Error:`, err.message);
+                return [];
+            }
         }
     };
 
@@ -2043,7 +1991,9 @@ builder.defineStreamHandler(async (args) => {
             timeProvider('VidRock', providerFetchFunctions.vidrock()),
             timeProvider('Watch32', providerFetchFunctions.watch32()),
             timeProvider('Xprime', providerFetchFunctions.xprime()),
-            timeProvider('Yflix', providerFetchFunctions.yflix())
+            timeProvider('Yflix', providerFetchFunctions.yflix()),
+            timeProvider('NetMirror', providerFetchFunctions.netmirror()),
+            timeProvider('Castle', providerFetchFunctions.castle())
         ];
 
         // Implement proper timeout that returns results immediately after 10 seconds
@@ -2075,7 +2025,7 @@ builder.defineStreamHandler(async (args) => {
             ));
 
             providerResults = currentResults.map((result, index) => {
-                const providerNames = ['ShowBox', 'Soaper TV', 'VidSrc', 'VidZee', 'MP4Hydra', 'UHDMovies', 'MoviesMod', 'TopMovies', 'MoviesDrive', '4KHDHub', 'Vixsrc', 'MovieBox', 'AnimeKai', 'Cinevibe', 'DahmerMovies', 'DVDPlay', 'HDHub4u', 'MalluMV', 'Mapple', 'StreamFlix', 'Videasy', 'VidLink', 'VidNestAnime', 'VidNest', 'VidRock', 'Watch32', 'Xprime', 'Yflix'];
+                const providerNames = ['ShowBox', 'Soaper TV', 'VidSrc', 'VidZee', 'MP4Hydra', 'UHDMovies', 'MoviesMod', 'TopMovies', 'MoviesDrive', '4KHDHub', 'Vixsrc', 'MovieBox', 'AnimeKai', 'Cinevibe', 'DahmerMovies', 'DVDPlay', 'HDHub4u', 'MalluMV', 'Mapple', 'StreamFlix', 'Videasy', 'VidLink', 'VidNestAnime', 'VidNest', 'VidRock', 'Watch32', 'Xprime', 'Yflix', 'NetMirror', 'Castle'];
                 if (result.status === 'fulfilled' && Array.isArray(result.value) && result.value.length > 0) {
                     console.log(`[Timeout] Provider ${providerNames[index]} completed with ${result.value.length} streams.`);
                     return result.value;
@@ -2124,7 +2074,9 @@ builder.defineStreamHandler(async (args) => {
             'VidRock': ENABLE_VIDROCK_PROVIDER && shouldFetch('vidrock') ? applyAllStreamFilters(providerResults[24], 'VidRock', minQualitiesPreferences.vidrock, excludeCodecsPreferences.vidrock) : [],
             'Watch32': ENABLE_WATCH32_PROVIDER && shouldFetch('watch32') ? applyAllStreamFilters(providerResults[25], 'Watch32', minQualitiesPreferences.watch32, excludeCodecsPreferences.watch32) : [],
             'Xprime': ENABLE_XPRIME_PROVIDER && shouldFetch('xprime') ? applyAllStreamFilters(providerResults[26], 'Xprime', minQualitiesPreferences.xprime, excludeCodecsPreferences.xprime) : [],
-            'Yflix': ENABLE_YFLIX_PROVIDER && shouldFetch('yflix') ? applyAllStreamFilters(providerResults[27], 'Yflix', minQualitiesPreferences.yflix, excludeCodecsPreferences.yflix) : []
+            'Yflix': ENABLE_YFLIX_PROVIDER && shouldFetch('yflix') ? applyAllStreamFilters(providerResults[27], 'Yflix', minQualitiesPreferences.yflix, excludeCodecsPreferences.yflix) : [],
+            'NetMirror': ENABLE_NETMIRROR_PROVIDER && shouldFetch('netmirror') ? applyAllStreamFilters(providerResults[28], 'NetMirror', minQualitiesPreferences.netmirror, excludeCodecsPreferences.netmirror) : [],
+            'Castle': ENABLE_CASTLE_PROVIDER && shouldFetch('castle') ? applyAllStreamFilters(providerResults[29], 'Castle', minQualitiesPreferences.castle, excludeCodecsPreferences.castle) : []
         };
 
         // Sort streams for each provider by quality, then size
@@ -2144,7 +2096,7 @@ builder.defineStreamHandler(async (args) => {
 
         // Combine streams in the preferred provider order
         combinedRawStreams = [];
-        const providerOrder = ['ShowBox', 'MovieBox', 'UHDMovies', '4KHDHub', 'MoviesMod', 'TopMovies', 'MoviesDrive', 'Soaper TV', 'VidZee', 'MP4Hydra', 'VidSrc', 'Vixsrc', 'AnimeKai', 'Cinevibe', 'DahmerMovies', 'DVDPlay', 'HDHub4u', 'MalluMV', 'Mapple', 'StreamFlix', 'Videasy', 'VidLink', 'VidNestAnime', 'VidNest', 'VidRock', 'Watch32', 'Xprime', 'Yflix'];
+        const providerOrder = ['ShowBox', 'MovieBox', 'NetMirror', 'Castle', 'UHDMovies', '4KHDHub', 'MoviesMod', 'TopMovies', 'MoviesDrive', 'Soaper TV', 'VidZee', 'MP4Hydra', 'VidSrc', 'Vixsrc', 'AnimeKai', 'Cinevibe', 'DahmerMovies', 'DVDPlay', 'HDHub4u', 'MalluMV', 'Mapple', 'StreamFlix', 'Videasy', 'VidLink', 'VidNestAnime', 'VidNest', 'VidRock', 'Watch32', 'Xprime', 'Yflix'];
         providerOrder.forEach(providerKey => {
             if (streamsByProvider[providerKey] && streamsByProvider[providerKey].length > 0) {
                 combinedRawStreams.push(...streamsByProvider[providerKey]);
@@ -2378,6 +2330,12 @@ builder.defineStreamHandler(async (args) => {
             nameDisplay = `${providerDisplayName} - ${qualityLabel}`;
         } else if (stream.provider === 'MovieBox') {
             // For MovieBox, use the name field from the provider (includes language if detected)
+            nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+        } else if (stream.provider === 'NetMirror') {
+            // For NetMirror, use the name field from the provider (includes platform)
+            nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+        } else if (stream.provider === 'Castle') {
+            // For Castle, use the name field from the provider (includes language)
             nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
         } else { // For other providers
             const qualityLabel = stream.quality || 'UNK';

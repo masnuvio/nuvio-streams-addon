@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const TMDB_API_KEY = '439c478a771f35c05022f9feabcca01c';
+const TMDB_API_KEY = 'b7fb46eb3d50118c701ba67ea5f7a279';
 const imdbId = 'tt1375666';
 const url = `https://api.themoviedb.org/3/find/${imdbId}?api_key=${TMDB_API_KEY}&external_source=imdb_id`;
 
