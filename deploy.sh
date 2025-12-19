@@ -68,7 +68,6 @@ echo -e "${GREEN}✓${NC} Nginx installed"
 # Create application directory
 echo ""
 echo "Setting up application directory..."
-mkdir -p $APP_DIR
 mkdir -p $LOG_DIR
 
 # Clone or update repository
@@ -76,6 +75,21 @@ if [ -d "$APP_DIR/.git" ]; then
     echo "Updating existing repository..."
     cd $APP_DIR
     git pull origin main
+elif [ -d "$APP_DIR" ] && [ "$(ls -A $APP_DIR)" ]; then
+    echo -e "${YELLOW}Warning: Directory $APP_DIR exists and is not empty${NC}"
+    read -p "Do you want to remove it and clone fresh? (y/n): " REMOVE_DIR
+    if [ "$REMOVE_DIR" = "y" ]; then
+        echo "Removing existing directory..."
+        rm -rf $APP_DIR
+        echo "Cloning repository..."
+        read -p "Enter your GitHub repository URL: " REPO_URL
+        git clone $REPO_URL $APP_DIR
+        cd $APP_DIR
+    else
+        echo -e "${RED}Cannot proceed with existing non-git directory${NC}"
+        echo "Please manually remove $APP_DIR or use a different location"
+        exit 1
+    fi
 else
     echo "Cloning repository..."
     read -p "Enter your GitHub repository URL: " REPO_URL
