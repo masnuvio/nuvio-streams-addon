@@ -18,9 +18,12 @@ logs/
 .git/
 .gitignore
 
-# Documentation
-*.md
-!README.md
+# Documentation (exclude all except README)
+LINUX_DEPLOYMENT.md
+QUICK_START.md
+PROXY_SETUP.md
+HOW_TO_CHECK_LOGS.md
+DEPLOYMENT.md
 
 # IDE
 .vscode/
@@ -32,6 +35,7 @@ nuvio-streams.service
 
 # Deployment scripts
 deploy.sh
+docker-deploy.sh
 
 # Certbot
 certbot/
