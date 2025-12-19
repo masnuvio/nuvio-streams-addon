@@ -1,18 +1,8 @@
-# Nuvio Streams Addon for Stremio
+# Nuvio Streams - Stremio Addon
 
-A powerful Stremio addon providing high-quality streaming links from 34+ providers, optimized for Linux VPS deployment.
+High-performance Stremio addon providing streaming links from 34+ providers. Deploy on any Linux VPS in minutes.
 
-## ✨ Features
-
-- **34 Providers** - Access streams from multiple sources
-- **Smart Caching** - Redis and file-based caching for better performance
-- **Quality Filtering** - Filter streams by minimum quality
-- **Codec Filtering** - Exclude DV/HDR streams if needed
-- **Custom Configuration** - Configure providers, quality, and more
-- **Production Ready** - PM2 clustering, Nginx reverse proxy, SSL support
-- **Easy Deployment** - Automated deployment script for Linux VPS
-
-## 🚀 Quick Deploy on Linux VPS
+## ⚡ Quick Start
 
 ### One-Command Deployment
 
@@ -21,266 +11,199 @@ wget https://raw.githubusercontent.com/masnuvio/nuvio-streams-addon/main/deploy.
 sudo bash deploy.sh
 ```
 
-The script will automatically:
-- ✅ Install Node.js, PM2, and Nginx
-- ✅ Clone and setup the application
-- ✅ Configure reverse proxy
-- ✅ Start the service
-- ✅ Setup firewall
+That's it! The script installs everything and starts your addon.
 
-### Manual Deployment
+## 🎯 Features
 
-See [LINUX_DEPLOYMENT.md](LINUX_DEPLOYMENT.md) for complete step-by-step guide including:
-- Server setup
-- Domain configuration
-- SSL/HTTPS setup
-- Process management
-- Monitoring and logging
-- Troubleshooting
+- **34+ Providers** - Multiple streaming sources
+- **Smart Caching** - Redis & file-based caching
+- **Quality Filtering** - Filter by resolution
+- **Production Ready** - PM2, Nginx, SSL included
+- **Easy Deploy** - Automated setup script
 
-## 📦 Working Providers
+## 📦 What You Get
 
-**Confirmed Working (14+ streams):**
-- VidZee
-- MP4Hydra
-- UHDMovies
-- 4KHDHub
-- Vixsrc
-- Castle
-- StreamFlix
-- DahmerMovies
-- VidLink
-- Videasy
+**Working Providers:**
+- VidZee, MP4Hydra, UHDMovies
+- 4KHDHub, Vixsrc, Castle
+- StreamFlix, DahmerMovies
+- VidLink, Videasy
+- And 24 more!
 
-**And 24 more providers!**
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Copy `.env.example` to `.env` and configure:
-
-```bash
-# Optional: Enable Redis caching (recommended for production)
-USE_REDIS_CACHE=false
-REDIS_URL=redis://localhost:6379
-
-# Optional: Disable specific providers
-ENABLE_VIDZEE_PROVIDER=true
-ENABLE_STREAMFLIX_PROVIDER=true
-# ... see .env.example for all options
-
-# Server port (default: 7000)
-PORT=7000
-```
-
-### Provider Configuration
-
-Configure providers via the web interface at `http://your-domain.com/configure`
-
-## 📖 Installation in Stremio
-
-1. Open Stremio
-2. Click **Add-ons** (puzzle icon)
-3. Click **Community Add-ons**
-4. Scroll to **Add-on Repository URL**
-5. Enter your manifest URL:
-   - Production: `https://your-domain.com/manifest.json`
-   - Local: `http://localhost:7000/manifest.json`
-6. Click **Install**
-
-## 🛠️ Development
-
-### Local Development
-
-```bash
-# Clone repository
-git clone https://github.com/masnuvio/nuvio-streams-addon.git
-cd nuvio-streams-addon
-
-# Install dependencies
-npm install
-
-# Start development server
-npm start
-```
-
-Access at: `http://localhost:7000`
-
-### Project Structure
-
-```
-├── server.js              # Express server
-├── addon.js               # Stremio addon logic
-├── manifest.json          # Addon manifest
-├── providers/             # Provider implementations
-├── utils/                 # Utility functions
-├── views/                 # Web interface
-├── ecosystem.config.js    # PM2 configuration
-├── nginx.conf             # Nginx configuration
-└── deploy.sh              # Deployment script
-```
-
-## 🌐 Production Deployment
+## 🚀 Deployment
 
 ### Requirements
 
-- **Server:** Ubuntu 20.04+ / Debian 11+ / CentOS 8+
-- **RAM:** 1GB minimum (2GB+ recommended)
-- **CPU:** 1 core minimum (2+ cores recommended)
-- **Domain:** Optional but recommended for SSL
+- Ubuntu 20.04+ / Debian 11+
+- 1GB RAM minimum (2GB recommended)
+- Domain name (optional, for SSL)
 
-### Deployment Options
+### Automated Setup
 
-**Option 1: Automated Script (Recommended)**
 ```bash
+# Download and run
+wget https://raw.githubusercontent.com/masnuvio/nuvio-streams-addon/main/deploy.sh
 sudo bash deploy.sh
 ```
 
-**Option 2: Manual Deployment**
+**What it does:**
+1. Installs Node.js, PM2, Nginx
+2. Clones and configures addon
+3. Starts service with PM2
+4. Configures firewall
 
-See [LINUX_DEPLOYMENT.md](LINUX_DEPLOYMENT.md) for complete guide.
+### Manual Setup
 
-### Domain & SSL Setup
+See [LINUX_DEPLOYMENT.md](LINUX_DEPLOYMENT.md) for step-by-step guide.
 
-1. **Point your domain to server IP**
-   ```
-   Type: A
-   Name: @
-   Value: YOUR_SERVER_IP
-   ```
+## 🌐 Domain & SSL
 
-2. **Install SSL certificate**
-   ```bash
-   sudo certbot --nginx -d your-domain.com
-   ```
+### Setup Domain
 
-3. **Access your addon**
+1. Point your domain A record to server IP
+2. Wait for DNS propagation (5-30 min)
+3. Install SSL:
+
+```bash
+sudo certbot --nginx -d your-domain.com
+```
+
+Done! Your addon is now at `https://your-domain.com`
+
+## 📱 Install in Stremio
+
+1. Open Stremio
+2. Go to **Add-ons** → **Community Add-ons**
+3. Enter manifest URL:
    ```
    https://your-domain.com/manifest.json
    ```
+4. Click **Install**
 
-## 📊 Performance
+## 🔧 Management
 
-- **Caching:** File-based and optional Redis caching
-- **Parallel Fetching:** All providers fetch simultaneously
-- **Timeout Protection:** 30s timeout per provider
-- **Smart Retries:** Automatic retries for failed requests
-- **Clustering:** PM2 cluster mode for multi-core utilization
-
-## 🔧 Management Commands
-
-### PM2 Process Management
+### PM2 Commands
 
 ```bash
-# View status
-pm2 status
+pm2 status                      # Check status
+pm2 logs nuvio-streams-addon    # View logs
+pm2 restart nuvio-streams-addon # Restart
+pm2 monit                       # Monitor resources
+```
 
-# View logs
-pm2 logs nuvio-streams-addon
+### Update Addon
 
-# Restart
+```bash
+cd /var/www/nuvio-streams-addon
+git pull origin main
+npm install --production
 pm2 restart nuvio-streams-addon
-
-# Monitor resources
-pm2 monit
 ```
 
-### Nginx
+## ⚙️ Configuration
 
-```bash
-# Test configuration
-sudo nginx -t
+### Environment Variables
 
-# Reload configuration
-sudo systemctl reload nginx
+Copy `.env.example` to `.env`:
 
-# View logs
-sudo tail -f /var/log/nginx/nuvio-streams-access.log
+```env
+# Enable Redis (recommended)
+USE_REDIS_CACHE=true
+REDIS_URL=redis://localhost:6379
+
+# Server port
+PORT=7000
+
+# Disable specific providers
+ENABLE_NETMIRROR_PROVIDER=false
 ```
+
+See `.env.example` for all options.
 
 ## 🐛 Troubleshooting
 
-### Application Won't Start
+### App Won't Start
 
 ```bash
-# Check logs
 pm2 logs nuvio-streams-addon --err
-
-# Check if port is in use
 sudo lsof -i :7000
-
-# Restart application
-pm2 restart nuvio-streams-addon
 ```
 
 ### Nginx 502 Error
 
 ```bash
-# Check if app is running
 pm2 status
 curl http://localhost:7000/health
-
-# Check Nginx logs
-sudo tail -f /var/log/nginx/nuvio-streams-error.log
+sudo systemctl restart nginx
 ```
 
-### SSL Certificate Issues
+### SSL Issues
 
 ```bash
-# Check certificate status
 sudo certbot certificates
-
-# Renew certificate
 sudo certbot renew
 ```
 
-See [LINUX_DEPLOYMENT.md](LINUX_DEPLOYMENT.md) for complete troubleshooting guide.
+See [LINUX_DEPLOYMENT.md](LINUX_DEPLOYMENT.md) for complete troubleshooting.
 
-## 🔄 Updating
+## 📖 Documentation
 
-```bash
-# Navigate to application directory
-cd /var/www/nuvio-streams-addon
+- [Linux Deployment Guide](LINUX_DEPLOYMENT.md) - Complete setup guide
+- [Quick Start](QUICK_START.md) - Get started fast
+- [Proxy Setup](PROXY_SETUP.md) - Configure proxies
+- [Environment Variables](.env.example) - All configuration options
 
-# Pull latest changes
-git pull origin main
+## 🏗️ Project Structure
 
-# Install dependencies
-npm install --production
-
-# Restart application
-pm2 restart nuvio-streams-addon
+```
+├── server.js              # Express server
+├── addon.js               # Stremio addon logic
+├── providers/             # 34+ provider implementations
+├── utils/                 # Helper functions
+├── views/                 # Web interface
+├── ecosystem.config.js    # PM2 configuration
+├── nginx.conf             # Nginx config template
+└── deploy.sh              # Automated deployment
 ```
 
-## 📝 Environment Variables Reference
+## 🔄 Development
 
-See `.env.example` for all available environment variables.
+### Local Development
 
-## 🎯 Production Checklist
+```bash
+git clone https://github.com/masnuvio/nuvio-streams-addon.git
+cd nuvio-streams-addon
+npm install
+npm start
+```
 
-- [ ] Server setup complete
-- [ ] Node.js 18+ installed
-- [ ] PM2 installed and configured
-- [ ] Nginx installed and configured
-- [ ] Application running: `pm2 status`
-- [ ] Domain DNS configured
-- [ ] SSL certificate installed
-- [ ] Firewall configured
-- [ ] PM2 startup enabled
-- [ ] Redis caching enabled (optional)
+Access at `http://localhost:7000`
 
-## 📄 License
+### Adding Providers
 
-MIT License - feel free to use and modify!
+1. Create provider file in `providers/`
+2. Export `getStreams` function
+3. Import in `addon.js`
+4. Add enable flag
+
+## 📊 Performance
+
+- **Caching:** File & Redis support
+- **Parallel Fetching:** All providers run simultaneously
+- **Timeout Protection:** 30s per provider
+- **Clustering:** PM2 multi-core support
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please:
+Contributions welcome! Please:
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+2. Create feature branch
+3. Make changes
+4. Submit pull request
+
+## 📄 License
+
+MIT License - Free to use and modify
 
 ## 🆘 Support
 
@@ -296,15 +219,18 @@ curl http://localhost:7000/health
 curl http://localhost:7000/manifest.json
 ```
 
-## 🔗 Documentation
+## 🎯 Production Checklist
 
-- [Linux Deployment Guide](LINUX_DEPLOYMENT.md) - Complete deployment guide
-- [Environment Variables](.env.example) - Configuration options
-- [PM2 Documentation](https://pm2.keymetrics.io/)
-- [Nginx Documentation](https://nginx.org/en/docs/)
+- [ ] Server setup complete
+- [ ] Domain DNS configured
+- [ ] SSL certificate installed
+- [ ] PM2 running: `pm2 status`
+- [ ] Nginx configured
+- [ ] Firewall enabled
+- [ ] Redis caching (optional)
 
 ---
 
-Made with ❤️ for the Stremio community
+**Deploy now:** `sudo bash deploy.sh`
 
-**Deploy your own instance:** `sudo bash deploy.sh`
+Made with ❤️ for Stremio

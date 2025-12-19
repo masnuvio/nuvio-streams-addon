@@ -1,68 +1,52 @@
-node_modules
+# Node modules
+node_modules/
+package-lock.json
 
-package-lock.json 
-.vercel
+# Environment files
+.env
+.env.local
+.env.production
 
-reddit_post.md
-reddit_post_title.md
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-.cache
-misscalleneous/reddit_post_title.md
-misscalleneous/logs.txt
-misscalleneous/reddit_post.md
-misscalleneous
+# Cache directories
+.cache/
+.streams_cache/
+.user_cookies/
 
-# Environment variables
+# Test files
+test_*.js
+test_*.txt
+*_test.js
+debug_*.js
+debug_*.txt
 
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
 
-# Cookies
-cookies.txt
-
-# IDE / OS specific
+# IDE
 .vscode/
 .idea/
-*.DS_Store
-*.project
-*.classpath
-*.cproject
-*.buildpath
-*.settings/
-*.suo
-*.user
-*.sln.docstates
+*.swp
+*.swo
+*~
 
-# Python specific
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.egg-info/
+# PM2
+.pm2/
+
+# Build outputs
 dist/
 build/
-*.egg
-venv/
-env/
-pip-wheel-metadata/
-.Python
-*.tar.gz
-collaboration_message.md
-.streams_cache
-important_announcement.md
-envs.zip
-qa.md
-discord_announcement.md
-uhdmovies_scraper.js
 
-announcement_v2.md
-providers/hianime_back.js
-hianime_extractor.js
-cloudstream-extensions-phisher
-hianime-extractor.js
-/provider-service
-/web-gui
-
-dahmer-movies-fetcher.js
-
-Extractor.kt
-
-.env
+# Misc
+cookies.txt
+*.bak
+*.old
