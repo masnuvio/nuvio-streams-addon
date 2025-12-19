@@ -1,203 +1,310 @@
-<!-- Improved compatibility of back to top link -->
-<a id="readme-top"></a>
+# Nuvio Streams Addon for Stremio
 
-<!-- PROJECT SHIELDS -->
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
+A powerful Stremio addon providing high-quality streaming links from 34+ providers, optimized for Linux VPS deployment.
 
-<!-- PROJECT LOGO -->
-<br />
-<div align="center">
-  <h1 align="center">🎬 Nuvio Streams</h1>
-  <p align="center">
-    Direct HTTP streaming addon for Stremio
-    <br />
-    Multiple providers • No P2P • Customizable quality settings
-    <br />
-    <br />
-    <a href="https://nuviostreams.hayd.uk"><strong>Try Public Instance »</strong></a>
-    <br />
-    <br />
-    <a href="https://nuviostreams.hayd.uk">View Demo</a>
-    ·
-    <a href="https://github.com/tapframe/NuvioStreamsAddon/issues/new?labels=bug&template=bug-report.md">Report Bug</a>
-    ·
-    <a href="https://github.com/tapframe/NuvioStreamsAddon/issues/new?labels=enhancement&template=feature-request.md">Request Feature</a>
-  </p>
-</div>
+## ✨ Features
 
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#key-features">Key Features</a></li>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
-    </li>
-    <li><a href="#public-instance">Public Instance</a></li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-        <li><a href="#configuration">Configuration</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage-notes">Usage Notes</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#support">Support</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
-  </ol>
-</details>
+- **34 Providers** - Access streams from multiple sources
+- **Smart Caching** - Redis and file-based caching for better performance
+- **Quality Filtering** - Filter streams by minimum quality
+- **Codec Filtering** - Exclude DV/HDR streams if needed
+- **Custom Configuration** - Configure providers, quality, and more
+- **Production Ready** - PM2 clustering, Nginx reverse proxy, SSL support
+- **Easy Deployment** - Automated deployment script for Linux VPS
 
-<!-- ABOUT THE PROJECT -->
-## About The Project
+## 🚀 Quick Deploy on Linux VPS
 
-Nuvio Streams is a powerful Stremio addon that provides direct HTTP streaming links for movies and TV shows from multiple online providers. Unlike torrent-based solutions, this addon focuses on delivering reliable, direct streams without P2P requirements.
+### One-Command Deployment
 
-**Perfect for users who:**
-* Prefer direct HTTP streaming over debrid services
-* Want customizable provider and quality settings  
-* Need reliable streaming without torrents/P2P
-* Are willing to configure personal cookies for optimal performance
+```bash
+wget https://raw.githubusercontent.com/masnuvio/nuvio-streams-addon/main/deploy.sh
+sudo bash deploy.sh
+```
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+The script will automatically:
+- ✅ Install Node.js, PM2, and Nginx
+- ✅ Clone and setup the application
+- ✅ Configure reverse proxy
+- ✅ Start the service
+- ✅ Setup firewall
 
-### Key Features
+### Manual Deployment
 
-* **🌐 Multiple Sources** - Aggregates direct HTTP streams without P2P
-* **Personal Cookie Support** - Get your own quota and access to 4K/HDR content
-* **🎯 Quality Filtering** - Set minimum quality requirements
-* **🔒 No P2P/Torrents** - Only direct HTTP streams
-* **🎬 Full Compatibility** - Supports TMDB & IMDb IDs
-* **Easy Configuration** - Web-based settings management
+See [LINUX_DEPLOYMENT.md](LINUX_DEPLOYMENT.md) for complete step-by-step guide including:
+- Server setup
+- Domain configuration
+- SSL/HTTPS setup
+- Process management
+- Monitoring and logging
+- Troubleshooting
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+## 📦 Working Providers
 
-### Built With
+**Confirmed Working (14+ streams):**
+- VidZee
+- MP4Hydra
+- UHDMovies
+- 4KHDHub
+- Vixsrc
+- Castle
+- StreamFlix
+- DahmerMovies
+- VidLink
+- Videasy
 
-* [![Node.js][Node.js]][Node-url]
-* [![Express.js][Express.js]][Express-url]
-* [![JavaScript][JavaScript]][JavaScript-url]
+**And 24 more providers!**
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+## 🔧 Configuration
 
-<!-- PUBLIC INSTANCE -->
-## Public Instance
+### Environment Variables
 
-**🌍 Current Public Instance:** [https://nuviostreams.hayd.uk](https://nuviostreams.hayd.uk)
+Copy `.env.example` to `.env` and configure:
 
-* 💡 For the most reliable experience, consider self-hosting your own instance
+```bash
+# Optional: Enable Redis caching (recommended for production)
+USE_REDIS_CACHE=false
+REDIS_URL=redis://localhost:6379
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+# Optional: Disable specific providers
+ENABLE_VIDZEE_PROVIDER=true
+ENABLE_STREAMFLIX_PROVIDER=true
+# ... see .env.example for all options
 
-<!-- GETTING STARTED -->
-## Getting Started
+# Server port (default: 7000)
+PORT=7000
+```
 
-Self-hosting provides the best experience with full access and personalized performance. For detailed setup and configuration instructions, please refer to our documentation.
+### Provider Configuration
 
-**[View the Self-Hosting Guide](https://github.com/tapframe/NuvioStreamsAddon/blob/master/DOCUMENTATION.md)**
+Configure providers via the web interface at `http://your-domain.com/configure`
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+## 📖 Installation in Stremio
 
-<!-- USAGE NOTES -->
-## Usage Notes
+1. Open Stremio
+2. Click **Add-ons** (puzzle icon)
+3. Click **Community Add-ons**
+4. Scroll to **Add-on Repository URL**
+5. Enter your manifest URL:
+   - Production: `https://your-domain.com/manifest.json`
+   - Local: `http://localhost:7000/manifest.json`
+6. Click **Install**
 
-### Troubleshooting
+## 🛠️ Development
 
-If some links are missing, try a refresh or a second attempt (caching may help). If a site is blocked in your region, consider using a proxy and configure proxy URLs in your `.env` file.
+### Local Development
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+```bash
+# Clone repository
+git clone https://github.com/masnuvio/nuvio-streams-addon.git
+cd nuvio-streams-addon
 
-<!-- PROVIDER GUIDES REMOVED -->
+# Install dependencies
+npm install
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+# Start development server
+npm start
+```
 
-<!-- CONTRIBUTING -->
-## Contributing
+Access at: `http://localhost:7000`
 
-Contributions make the open source community amazing! Any contributions are **greatly appreciated**.
+### Project Structure
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+```
+├── server.js              # Express server
+├── addon.js               # Stremio addon logic
+├── manifest.json          # Addon manifest
+├── providers/             # Provider implementations
+├── utils/                 # Utility functions
+├── views/                 # Web interface
+├── ecosystem.config.js    # PM2 configuration
+├── nginx.conf             # Nginx configuration
+└── deploy.sh              # Deployment script
+```
 
-### Ways to Contribute
+## 🌐 Production Deployment
 
-* 🔧 **Code Contributions** - Improve core features or add new ones
-* 🐛 **Bug Reports** - Help identify and fix issues
-* 💡 **Feature Requests** - Suggest improvements
-* **Documentation** - Improve or translate docs
-* 🧪 **Testing** - Test on different platforms
+### Requirements
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+- **Server:** Ubuntu 20.04+ / Debian 11+ / CentOS 8+
+- **RAM:** 1GB minimum (2GB+ recommended)
+- **CPU:** 1 core minimum (2+ cores recommended)
+- **Domain:** Optional but recommended for SSL
 
-<!-- SUPPORT -->
-## Support
+### Deployment Options
 
-If you find Nuvio Streams useful, consider supporting development:
+**Option 1: Automated Script (Recommended)**
+```bash
+sudo bash deploy.sh
+```
 
-* **[Ko-Fi](https://ko-fi.com/tapframe)** - Help with server costs
-* **GitHub Star** - Show your support
-* **Share** - Tell others about the project
+**Option 2: Manual Deployment**
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+See [LINUX_DEPLOYMENT.md](LINUX_DEPLOYMENT.md) for complete guide.
 
-<!-- LICENSE -->
-## License
+### Domain & SSL Setup
 
-Distributed under the MIT License. See `LICENSE` for more information.
+1. **Point your domain to server IP**
+   ```
+   Type: A
+   Name: @
+   Value: YOUR_SERVER_IP
+   ```
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+2. **Install SSL certificate**
+   ```bash
+   sudo certbot --nginx -d your-domain.com
+   ```
 
-<!-- CONTACT -->
-## Contact
+3. **Access your addon**
+   ```
+   https://your-domain.com/manifest.json
+   ```
 
-**Project Links:**
-* GitHub: [https://github.com/tapframe](https://github.com/tapframe)
-* Issues: [https://github.com/tapframe/NuvioStreamsAddon/issues](https://github.com/tapframe/NuvioStreamsAddon/issues)
-* Public Instance: [https://nuviostreams.hayd.uk](https://nuviostreams.hayd.uk)
+## 📊 Performance
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+- **Caching:** File-based and optional Redis caching
+- **Parallel Fetching:** All providers fetch simultaneously
+- **Timeout Protection:** 30s timeout per provider
+- **Smart Retries:** Automatic retries for failed requests
+- **Clustering:** PM2 cluster mode for multi-core utilization
 
-<!-- ACKNOWLEDGMENTS -->
-## Acknowledgments
+## 🔧 Management Commands
 
-* [TMDB](https://www.themoviedb.org/) - Movie/TV metadata
-* [Stremio](https://www.stremio.com/) - Streaming platform
-* [ScraperAPI](https://www.scraperapi.com/) - Anti-scraping solution
-* [Netlify](https://www.netlify.com/) - Proxy hosting
-* Community contributors and testers
+### PM2 Process Management
 
-**Disclaimer:** This addon scrapes third-party websites. Users are responsible for compliance with terms of service and local laws. For educational and personal use only.
+```bash
+# View status
+pm2 status
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+# View logs
+pm2 logs nuvio-streams-addon
 
-<!-- MARKDOWN LINKS & IMAGES -->
-[contributors-shield]: https://img.shields.io/github/contributors/tapframe/NuvioStreamsAddon.svg?style=for-the-badge
-[contributors-url]: https://github.com/tapframe/NuvioStreamsAddon/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/tapframe/NuvioStreamsAddon.svg?style=for-the-badge
-[forks-url]: https://github.com/tapframe/NuvioStreamsAddon/network/members
-[stars-shield]: https://img.shields.io/github/stars/tapframe/NuvioStreamsAddon.svg?style=for-the-badge
-[stars-url]: https://github.com/tapframe/NuvioStreamsAddon/stargazers
-[issues-shield]: https://img.shields.io/github/issues/tapframe/NuvioStreamsAddon.svg?style=for-the-badge
-[issues-url]: https://github.com/tapframe/NuvioStreamsAddon/issues
-[license-shield]: https://img.shields.io/github/license/tapframe/NuvioStreamsAddon.svg?style=for-the-badge
-[license-url]: https://github.com/tapframe/NuvioStreamsAddon/blob/master/LICENSE
+# Restart
+pm2 restart nuvio-streams-addon
 
-[Node.js]: https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white
-[Node-url]: https://nodejs.org/
-[Express.js]: https://img.shields.io/badge/Express.js-404D59?style=for-the-badge&logo=express&logoColor=white
-[Express-url]: https://expressjs.com/
-[JavaScript]: https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black
-[JavaScript-url]: https://developer.mozilla.org/en-US/docs/Web/JavaScript
+# Monitor resources
+pm2 monit
+```
+
+### Nginx
+
+```bash
+# Test configuration
+sudo nginx -t
+
+# Reload configuration
+sudo systemctl reload nginx
+
+# View logs
+sudo tail -f /var/log/nginx/nuvio-streams-access.log
+```
+
+## 🐛 Troubleshooting
+
+### Application Won't Start
+
+```bash
+# Check logs
+pm2 logs nuvio-streams-addon --err
+
+# Check if port is in use
+sudo lsof -i :7000
+
+# Restart application
+pm2 restart nuvio-streams-addon
+```
+
+### Nginx 502 Error
+
+```bash
+# Check if app is running
+pm2 status
+curl http://localhost:7000/health
+
+# Check Nginx logs
+sudo tail -f /var/log/nginx/nuvio-streams-error.log
+```
+
+### SSL Certificate Issues
+
+```bash
+# Check certificate status
+sudo certbot certificates
+
+# Renew certificate
+sudo certbot renew
+```
+
+See [LINUX_DEPLOYMENT.md](LINUX_DEPLOYMENT.md) for complete troubleshooting guide.
+
+## 🔄 Updating
+
+```bash
+# Navigate to application directory
+cd /var/www/nuvio-streams-addon
+
+# Pull latest changes
+git pull origin main
+
+# Install dependencies
+npm install --production
+
+# Restart application
+pm2 restart nuvio-streams-addon
+```
+
+## 📝 Environment Variables Reference
+
+See `.env.example` for all available environment variables.
+
+## 🎯 Production Checklist
+
+- [ ] Server setup complete
+- [ ] Node.js 18+ installed
+- [ ] PM2 installed and configured
+- [ ] Nginx installed and configured
+- [ ] Application running: `pm2 status`
+- [ ] Domain DNS configured
+- [ ] SSL certificate installed
+- [ ] Firewall configured
+- [ ] PM2 startup enabled
+- [ ] Redis caching enabled (optional)
+
+## 📄 License
+
+MIT License - feel free to use and modify!
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 🆘 Support
+
+**Check logs:**
+```bash
+pm2 logs nuvio-streams-addon
+sudo tail -f /var/log/nginx/nuvio-streams-error.log
+```
+
+**Test endpoints:**
+```bash
+curl http://localhost:7000/health
+curl http://localhost:7000/manifest.json
+```
+
+## 🔗 Documentation
+
+- [Linux Deployment Guide](LINUX_DEPLOYMENT.md) - Complete deployment guide
+- [Environment Variables](.env.example) - Configuration options
+- [PM2 Documentation](https://pm2.keymetrics.io/)
+- [Nginx Documentation](https://nginx.org/en/docs/)
+
+---
+
+Made with ❤️ for the Stremio community
+
+**Deploy your own instance:** `sudo bash deploy.sh`
