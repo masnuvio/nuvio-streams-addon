@@ -717,7 +717,11 @@ function getStreams(tmdbId, mediaType = 'movie', seasonNum = null, episodeNum = 
                                     url: source.url,
                                     quality: quality,
                                     type: source.type.includes('mpegURL') ? 'hls' : 'direct',
-                                    headers: streamHeaders
+                                    headers: streamHeaders,
+                                    behaviorHints: {
+                                        notWebReady: false,
+                                        bingeGroup: `netmirror-${platform}-${quality}`
+                                    }
                                 };
                             });
 
