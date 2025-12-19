@@ -1,0 +1,22 @@
+{
+    "id": "com.nuvio.streams",
+    "version": "1.0.0",
+    "name": "Nuvio Streams",
+    "description": "High-performance streaming addon with 34+ providers for movies and TV shows",
+    "logo": "https://via.placeholder.com/256x256.png?text=Nuvio+Streams",
+    "resources": [
+        "stream"
+    ],
+    "types": [
+        "movie",
+        "series"
+    ],
+    "catalogs": [],
+    "idPrefixes": [
+        "tt"
+    ],
+    "behaviorHints": {
+        "configurable": true,
+        "configurationRequired": false
+    }
+}
