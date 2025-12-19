@@ -1,0 +1,45 @@
+# Node modules
+node_modules/
+npm-debug.log
+
+# Environment files
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# Cache
+.cache/
+.streams_cache/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+
+# PM2 (not needed for Docker)
+ecosystem.config.js
+nuvio-streams.service
+
+# Deployment scripts
+deploy.sh
+
+# Certbot
+certbot/
+
+# Nginx config (separate for Docker)
+nginx.conf
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yml

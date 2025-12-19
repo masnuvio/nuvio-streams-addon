@@ -1,25 +1,26 @@
 # Nuvio Streams - Stremio Addon
 
-High-performance Stremio addon providing streaming links from 34+ providers. Deploy on any Linux VPS in minutes.
+High-performance Stremio addon providing streaming links from 34+ providers. Deploy with Docker in one command.
 
-## ⚡ Quick Start
+## ⚡ Quick Start (Docker - Recommended)
 
 ### One-Command Deployment
 
 ```bash
-wget https://raw.githubusercontent.com/masnuvio/nuvio-streams-addon/main/deploy.sh
-sudo bash deploy.sh
+wget https://raw.githubusercontent.com/masnuvio/nuvio-streams-addon/main/docker-deploy.sh
+sudo bash docker-deploy.sh
 ```
 
-That's it! The script installs everything and starts your addon.
+That's it! Docker, containers, Nginx, and SSL all configured automatically.
 
 ## 🎯 Features
 
 - **34+ Providers** - Multiple streaming sources
 - **Smart Caching** - Redis & file-based caching
 - **Quality Filtering** - Filter by resolution
-- **Production Ready** - PM2, Nginx, SSL included
-- **Easy Deploy** - Automated setup script
+- **Docker Ready** - One-command deployment
+- **SSL Included** - Automatic HTTPS setup
+- **Auto-restart** - Containers restart on failure
 
 ## 📦 What You Get
 
@@ -30,7 +31,7 @@ That's it! The script installs everything and starts your addon.
 - VidLink, Videasy
 - And 24 more!
 
-## 🚀 Deployment
+## 🐳 Docker Deployment (Recommended)
 
 ### Requirements
 
@@ -42,33 +43,45 @@ That's it! The script installs everything and starts your addon.
 
 ```bash
 # Download and run
-wget https://raw.githubusercontent.com/masnuvio/nuvio-streams-addon/main/deploy.sh
-sudo bash deploy.sh
+wget https://raw.githubusercontent.com/masnuvio/nuvio-streams-addon/main/docker-deploy.sh
+sudo bash docker-deploy.sh
 ```
 
 **What it does:**
-1. Installs Node.js, PM2, Nginx
-2. Clones and configures addon
-3. Starts service with PM2
-4. Configures firewall
+1. Installs Docker & Docker Compose
+2. Clones repository
+3. Builds and starts containers
+4. Configures Nginx reverse proxy
+5. Sets up SSL (if domain provided)
+6. Configures firewall
 
-### Manual Setup
+### Manual Docker Setup
 
-See [LINUX_DEPLOYMENT.md](LINUX_DEPLOYMENT.md) for step-by-step guide.
+```bash
+# Clone repository
+git clone https://github.com/masnuvio/nuvio-streams-addon.git
+cd nuvio-streams-addon
+
+# Create .env file
+cp .env.example .env
+
+# Start containers
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+```
 
 ## 🌐 Domain & SSL
 
-### Setup Domain
+The Docker deployment automatically handles SSL:
 
-1. Point your domain A record to server IP
-2. Wait for DNS propagation (5-30 min)
-3. Install SSL:
+1. Enter your domain when prompted
+2. Script obtains Let's Encrypt certificate
+3. Nginx configured for HTTPS
+4. Auto-renewal enabled
 
-```bash
-sudo certbot --nginx -d your-domain.com
-```
-
-Done! Your addon is now at `https://your-domain.com`
+**Your addon will be at:** `https://your-domain.com/manifest.json`
 
 ## 📱 Install in Stremio
 
@@ -82,36 +95,43 @@ Done! Your addon is now at `https://your-domain.com`
 
 ## 🔧 Management
 
-### PM2 Commands
+### Docker Commands
 
 ```bash
-pm2 status                      # Check status
-pm2 logs nuvio-streams-addon    # View logs
-pm2 restart nuvio-streams-addon # Restart
-pm2 monit                       # Monitor resources
-```
+# Check status
+docker-compose ps
 
-### Update Addon
+# View logs
+docker-compose logs -f
+docker-compose logs -f app    # App logs only
 
-```bash
-cd /var/www/nuvio-streams-addon
+# Restart
+docker-compose restart
+
+# Stop
+docker-compose down
+
+# Start
+docker-compose up -d
+
+# Update
+cd /opt/nuvio-streams
 git pull origin main
-npm install --production
-pm2 restart nuvio-streams-addon
+docker-compose up -d --build
 ```
 
 ## ⚙️ Configuration
 
 ### Environment Variables
 
-Copy `.env.example` to `.env`:
+Edit `.env` file:
 
 ```env
 # Enable Redis (recommended)
 USE_REDIS_CACHE=true
 REDIS_URL=redis://localhost:6379
 
-# Server port
+# Server port (internal)
 PORT=7000
 
 # Disable specific providers
@@ -122,76 +142,86 @@ See `.env.example` for all options.
 
 ## 🐛 Troubleshooting
 
-### App Won't Start
+### Containers Won't Start
 
 ```bash
-pm2 logs nuvio-streams-addon --err
-sudo lsof -i :7000
+docker-compose logs
+docker-compose ps
 ```
 
-### Nginx 502 Error
+### App Not Accessible
 
 ```bash
-pm2 status
-curl http://localhost:7000/health
-sudo systemctl restart nginx
+# Check if containers are running
+docker-compose ps
+
+# Check app health
+docker-compose exec app wget -O- http://localhost:7000/health
+
+# Restart containers
+docker-compose restart
 ```
 
 ### SSL Issues
 
 ```bash
-sudo certbot certificates
-sudo certbot renew
-```
+# Re-obtain certificate
+docker-compose run --rm certbot certonly --webroot \
+  --webroot-path=/var/www/certbot \
+  -d your-domain.com
 
-See [LINUX_DEPLOYMENT.md](LINUX_DEPLOYMENT.md) for complete troubleshooting.
+# Restart nginx
+docker-compose restart nginx
+```
 
 ## 📖 Documentation
 
-- [Linux Deployment Guide](LINUX_DEPLOYMENT.md) - Complete setup guide
+- [Docker Deployment](DOCKER_DEPLOYMENT.md) - Complete Docker guide
+- [Linux Deployment](LINUX_DEPLOYMENT.md) - PM2/systemd deployment
 - [Quick Start](QUICK_START.md) - Get started fast
-- [Proxy Setup](PROXY_SETUP.md) - Configure proxies
 - [Environment Variables](.env.example) - All configuration options
 
 ## 🏗️ Project Structure
 
 ```
+├── Dockerfile             # Docker image definition
+├── docker-compose.yml     # Multi-container setup
+├── docker-deploy.sh       # Automated deployment
 ├── server.js              # Express server
 ├── addon.js               # Stremio addon logic
 ├── providers/             # 34+ provider implementations
-├── utils/                 # Helper functions
-├── views/                 # Web interface
-├── ecosystem.config.js    # PM2 configuration
-├── nginx.conf             # Nginx config template
-└── deploy.sh              # Automated deployment
+├── nginx/                 # Nginx configuration
+└── views/                 # Web interface
 ```
 
 ## 🔄 Development
 
-### Local Development
+### Local Development (Docker)
 
 ```bash
 git clone https://github.com/masnuvio/nuvio-streams-addon.git
 cd nuvio-streams-addon
+docker-compose up
+```
+
+Access at `http://localhost`
+
+### Local Development (Node.js)
+
+```bash
 npm install
 npm start
 ```
 
 Access at `http://localhost:7000`
 
-### Adding Providers
-
-1. Create provider file in `providers/`
-2. Export `getStreams` function
-3. Import in `addon.js`
-4. Add enable flag
-
 ## 📊 Performance
 
-- **Caching:** File & Redis support
-- **Parallel Fetching:** All providers run simultaneously
-- **Timeout Protection:** 30s per provider
-- **Clustering:** PM2 multi-core support
+- **Docker Isolation** - Clean environment
+- **Auto-restart** - Containers restart on failure
+- **Health Checks** - Automatic monitoring
+- **Nginx Caching** - Static file optimization
+- **SSL/TLS** - Automatic HTTPS
 
 ## 🤝 Contributing
 
@@ -209,28 +239,26 @@ MIT License - Free to use and modify
 
 **Check logs:**
 ```bash
-pm2 logs nuvio-streams-addon
-sudo tail -f /var/log/nginx/nuvio-streams-error.log
+docker-compose logs -f
 ```
 
 **Test endpoints:**
 ```bash
-curl http://localhost:7000/health
-curl http://localhost:7000/manifest.json
+curl http://localhost/health
+curl http://localhost/manifest.json
 ```
 
 ## 🎯 Production Checklist
 
-- [ ] Server setup complete
+- [ ] Docker installed
 - [ ] Domain DNS configured
-- [ ] SSL certificate installed
-- [ ] PM2 running: `pm2 status`
-- [ ] Nginx configured
-- [ ] Firewall enabled
-- [ ] Redis caching (optional)
+- [ ] Containers running: `docker-compose ps`
+- [ ] SSL certificate obtained
+- [ ] Firewall configured
+- [ ] Tested in Stremio
 
 ---
 
-**Deploy now:** `sudo bash deploy.sh`
+**Deploy now:** `sudo bash docker-deploy.sh`
 
 Made with ❤️ for Stremio
