@@ -7,13 +7,16 @@ console.log('[NetMirror] Initializing NetMirror provider');
 
 // Constants
 const TMDB_API_KEY = "439c478a771f35c05022f9feabcca01c";
-const NETMIRROR_BASE = 'https://netmirror.app/';
+const NETMIRROR_BASE = 'https://net51.cc/';
 const BASE_HEADERS = {
-    'X-Requested-With': 'XMLHttpRequest',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/119.0.6045.109 Mobile/15E148 Safari/604.1',
     'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'en-US,en;q=0.5',
-    'Connection': 'keep-alive'
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'same-origin'
 };
 
 // Global cookie storage
@@ -21,8 +24,8 @@ let globalCookie = '';
 let cookieTimestamp = 0;
 const COOKIE_EXPIRY = 54000000; // 15 hours in milliseconds
 
-// Helper function to make HTTP requests
-function makeRequest(url, options = {}) {
+// Helper function to make HTTP requests with retry logic
+function makeRequest(url, options = {}, retries = 3) {
     const config = {
         method: options.method || 'GET',
         url: url,
@@ -30,9 +33,9 @@ function makeRequest(url, options = {}) {
             ...BASE_HEADERS,
             ...options.headers
         },
-        timeout: 10000,
+        timeout: 15000,
         validateStatus: function (status) {
-            return status >= 200 && status < 300; // default
+            return status >= 200 && status < 300;
         }
     };
 
@@ -40,24 +43,38 @@ function makeRequest(url, options = {}) {
         config.data = options.body;
     }
 
-    return axios(config).then(function (response) {
-        // Axios returns data directly, but we need to mimic fetch response for compatibility with existing logic
-        // or just return the response object and let the chain handle it.
-        // The existing logic expects .json() or .text() methods.
+    function attemptRequest(attemptsLeft) {
+        return axios(config).then(function (response) {
+            return {
+                ok: true,
+                status: response.status,
+                statusText: response.statusText,
+                headers: {
+                    get: (name) => response.headers[name.toLowerCase()]
+                },
+                json: () => Promise.resolve(response.data),
+                text: () => Promise.resolve(typeof response.data === 'string' ? response.data : JSON.stringify(response.data))
+            };
+        }).catch(function (error) {
+            // Retry on connection errors
+            if (attemptsLeft > 0 && (
+                error.code === 'ECONNRESET' ||
+                error.code === 'ETIMEDOUT' ||
+                error.code === 'ECONNREFUSED' ||
+                (error.response && error.response.status >= 500)
+            )) {
+                const delay = (retries - attemptsLeft + 1) * 500; // 500ms, 1000ms, 1500ms
+                console.log(`[NetMirror] Request failed (${error.code || error.response?.status}), retrying in ${delay}ms... (${attemptsLeft} attempts left)`);
 
-        return {
-            ok: true,
-            status: response.status,
-            statusText: response.statusText,
-            headers: {
-                get: (name) => response.headers[name]
-            },
-            json: () => Promise.resolve(response.data),
-            text: () => Promise.resolve(typeof response.data === 'string' ? response.data : JSON.stringify(response.data))
-        };
-    }).catch(function (error) {
-        throw new Error(`HTTP ${error.response ? error.response.status : 'Unknown'}: ${error.message}`);
-    });
+                return new Promise(resolve => setTimeout(resolve, delay))
+                    .then(() => attemptRequest(attemptsLeft - 1));
+            }
+
+            throw new Error(`HTTP ${error.response ? error.response.status : error.code || 'Unknown'}: ${error.message}`);
+        });
+    }
+
+    return attemptRequest(retries);
 }
 
 // Get current Unix timestamp
