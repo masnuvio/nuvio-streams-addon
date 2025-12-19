@@ -714,12 +714,9 @@ function getStreams(tmdbId, mediaType = 'movie', seasonNum = null, episodeNum = 
                                 return {
                                     name: `NetMirror (${platform.charAt(0).toUpperCase() + platform.slice(1)})`,
                                     title: streamTitle,
-                                    url: source.url,
-                                    quality: quality,
-                                    type: source.type.includes('mpegURL') ? 'hls' : 'direct',
-                                    headers: streamHeaders,
+                                    externalUrl: source.url,
                                     behaviorHints: {
-                                        notWebReady: false,
+                                        notWebReady: true,
                                         bingeGroup: `netmirror-${platform}-${quality}`
                                     }
                                 };
