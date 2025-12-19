@@ -1,0 +1,20 @@
+[Unit]
+Description=Nuvio Streams Stremio Addon
+Documentation=https://github.com/masnuvio/nuvio-streams-addon
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/nuvio-streams-addon
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=nuvio-streams
+Environment=NODE_ENV=production
+Environment=PORT=7000
+
+[Install]
+WantedBy=multi-user.target
