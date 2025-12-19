@@ -24,8 +24,8 @@ let globalCookie = '';
 let cookieTimestamp = 0;
 const COOKIE_EXPIRY = 54000000; // 15 hours in milliseconds
 
-// Helper function to make HTTP requests with retry logic
-function makeRequest(url, options = {}, retries = 3) {
+// Helper function to make HTTP requests
+function makeRequest(url, options = {}) {
     const config = {
         method: options.method || 'GET',
         url: url,
@@ -33,9 +33,9 @@ function makeRequest(url, options = {}, retries = 3) {
             ...BASE_HEADERS,
             ...options.headers
         },
-        timeout: 15000,
+        timeout: 10000,
         validateStatus: function (status) {
-            return status >= 200 && status < 300;
+            return status >= 200 && status < 300; // default
         }
     };
 
@@ -43,38 +43,24 @@ function makeRequest(url, options = {}, retries = 3) {
         config.data = options.body;
     }
 
-    function attemptRequest(attemptsLeft) {
-        return axios(config).then(function (response) {
-            return {
-                ok: true,
-                status: response.status,
-                statusText: response.statusText,
-                headers: {
-                    get: (name) => response.headers[name.toLowerCase()]
-                },
-                json: () => Promise.resolve(response.data),
-                text: () => Promise.resolve(typeof response.data === 'string' ? response.data : JSON.stringify(response.data))
-            };
-        }).catch(function (error) {
-            // Retry on connection errors
-            if (attemptsLeft > 0 && (
-                error.code === 'ECONNRESET' ||
-                error.code === 'ETIMEDOUT' ||
-                error.code === 'ECONNREFUSED' ||
-                (error.response && error.response.status >= 500)
-            )) {
-                const delay = (retries - attemptsLeft + 1) * 500; // 500ms, 1000ms, 1500ms
-                console.log(`[NetMirror] Request failed (${error.code || error.response?.status}), retrying in ${delay}ms... (${attemptsLeft} attempts left)`);
+    return axios(config).then(function (response) {
+        // Axios returns data directly, but we need to mimic fetch response for compatibility with existing logic
+        // or just return the response object and let the chain handle it.
+        // The existing logic expects .json() or .text() methods.
 
-                return new Promise(resolve => setTimeout(resolve, delay))
-                    .then(() => attemptRequest(attemptsLeft - 1));
-            }
-
-            throw new Error(`HTTP ${error.response ? error.response.status : error.code || 'Unknown'}: ${error.message}`);
-        });
-    }
-
-    return attemptRequest(retries);
+        return {
+            ok: true,
+            status: response.status,
+            statusText: response.statusText,
+            headers: {
+                get: (name) => response.headers[name]
+            },
+            json: () => Promise.resolve(response.data),
+            text: () => Promise.resolve(typeof response.data === 'string' ? response.data : JSON.stringify(response.data))
+        };
+    }).catch(function (error) {
+        throw new Error(`HTTP ${error.response ? error.response.status : 'Unknown'}: ${error.message}`);
+    });
 }
 
 // Get current Unix timestamp
@@ -714,11 +700,10 @@ function getStreams(tmdbId, mediaType = 'movie', seasonNum = null, episodeNum = 
                                 return {
                                     name: `NetMirror (${platform.charAt(0).toUpperCase() + platform.slice(1)})`,
                                     title: streamTitle,
-                                    externalUrl: source.url,
-                                    behaviorHints: {
-                                        notWebReady: true,
-                                        bingeGroup: `netmirror-${platform}-${quality}`
-                                    }
+                                    url: source.url,
+                                    quality: quality,
+                                    type: source.type.includes('mpegURL') ? 'hls' : 'direct',
+                                    headers: streamHeaders
                                 };
                             });
 
