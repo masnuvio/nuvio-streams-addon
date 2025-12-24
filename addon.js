@@ -2494,7 +2494,7 @@ ${warningMessage}`;
             name: nameDisplay,
             title: finalTitle,
             url: stream.url,
-            type: 'url', // CRITICAL: This is the type of the stream itself, not the content
+            type: stream.type || 'url', // Use provider's type (hls, direct, etc.) or default to 'url'
             availability: 2,
             behaviorHints: {
                 notWebReady: true // As per the working example, indicates Stremio might need to handle it carefully or use external player
