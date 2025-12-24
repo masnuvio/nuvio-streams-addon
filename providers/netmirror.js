@@ -702,7 +702,7 @@ function getStreams(tmdbId, mediaType = 'movie', seasonNum = null, episodeNum = 
                                     title: streamTitle,
                                     url: source.url,
                                     quality: quality,
-                                    type: (source.type && source.type.includes('mpegURL')) || source.url.includes('.m3u8') ? 'hls' : 'direct',
+                                    type: 'url', // Using 'url' instead of 'hls' - Stremio may not support headers with HLS
                                     headers: streamHeaders
                                 };
                             });
