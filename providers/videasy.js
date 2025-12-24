@@ -98,10 +98,10 @@ function requestRaw(method, urlString, options) {
   }).then(response => {
     return response.text().then(body => {
       if (response.ok) {
-        return { 
-          status: response.status, 
-          headers: response.headers, 
-          body: body 
+        return {
+          status: response.status,
+          headers: response.headers,
+          body: body
         };
       } else {
         throw new Error(`HTTP ${response.status}: ${body}`);
@@ -233,7 +233,7 @@ function normalizeLanguageName(language) {
   if (!language || typeof language !== 'string') {
     return '';
   }
-  
+
   const languageMap = {
     'en': 'English',
     'eng': 'English',
@@ -311,7 +311,7 @@ function normalizeLanguageName(language) {
     'ind': 'Indonesian',
     'indonesian': 'Indonesian'
   };
-  
+
   const normalized = language.toLowerCase().trim();
   return languageMap[normalized] || language; // Return mapped name or original if not found
 }
@@ -535,7 +535,7 @@ function formatStreamsForNuvio(mediaData, serverName, serverConfig, mediaDetails
 
       streams.push({
         name: `VIDEASY ${serverName} (${serverConfig.language})${languageInfo} - ${quality}`,
-        title: title,
+        title: `${mediaDetails.title} (${mediaDetails.year}) - ${serverName} ${quality}`,
         url: source.url,
         quality: quality,
         size: 'Unknown',
