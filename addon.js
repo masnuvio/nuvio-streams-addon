@@ -2495,15 +2495,17 @@ ${warningMessage}`;
             title: finalTitle,
             url: stream.url,
             type: stream.type || 'url', // Use provider's type (hls, direct, etc.) or default to 'url'
-            availability: 2,
-            behaviorHints: {
-                notWebReady: true // As per the working example, indicates Stremio might need to handle it carefully or use external player
-            }
+            availability: 2
         };
 
         // Include headers if present (critical for providers like NetMirror, MP4Hydra, etc.)
         if (stream.headers) {
             stremioStream.headers = stream.headers;
+        }
+
+        // Include behaviorHints if present from provider
+        if (stream.behaviorHints) {
+            stremioStream.behaviorHints = stream.behaviorHints;
         }
 
         return stremioStream;
