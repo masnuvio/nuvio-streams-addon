@@ -2391,6 +2391,9 @@ builder.defineStreamHandler(async (args) => {
         } else if (stream.provider === 'Castle') {
             // For Castle, use the name field from the provider (includes language)
             nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+        } else if (stream.provider === 'Videasy') {
+            // For Videasy, use the name field from the provider (includes server name and language)
+            nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
         } else { // For other providers
             const qualityLabel = stream.quality || 'UNK';
             // Skip flag emoji for PStream streams
