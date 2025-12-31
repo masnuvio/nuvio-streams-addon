@@ -7,7 +7,7 @@ console.log('[NetMirror] Initializing NetMirror provider');
 
 // Constants
 const TMDB_API_KEY = "439c478a771f35c05022f9feabcca01c";
-const NETMIRROR_BASE = 'https://net51.cc/';
+const NETMIRROR_BASE = 'https://net51.cc'; // Removed trailing slash for better control
 const BASE_HEADERS = {
     'X-Requested-With': 'XMLHttpRequest',
     'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/119.0.6045.109 Mobile/15E148 Safari/604.1', // Switched to Mobile UA to get ::ni token
@@ -85,7 +85,8 @@ function bypass() {
             throw new Error('Max bypass attempts reached');
         }
 
-        return makeRequest(`${NETMIRROR_BASE}/tv/p.php`, {
+        // Use Web/Mobile auth endpoint to match /playlist.php
+        return makeRequest(`${NETMIRROR_BASE}/p.php`, {
             method: 'POST',
             headers: BASE_HEADERS
         }).then(function (response) {
@@ -163,7 +164,7 @@ function searchContent(query, platform) {
                 headers: {
                     ...BASE_HEADERS,
                     'Cookie': cookieString,
-                    'Referer': `${NETMIRROR_BASE}/tv/home`
+                    'Referer': `${NETMIRROR_BASE}/`
                 }
             }
         );
@@ -225,7 +226,7 @@ function getEpisodesFromSeason(seriesId, seasonId, platform, page) {
                     headers: {
                         ...BASE_HEADERS,
                         'Cookie': cookieString,
-                        'Referer': `${NETMIRROR_BASE}/tv/home`
+                        'Referer': `${NETMIRROR_BASE}/`
                     }
                 }
             ).then(function (response) {
@@ -289,7 +290,7 @@ function loadContent(contentId, platform) {
                 headers: {
                     ...BASE_HEADERS,
                     'Cookie': cookieString,
-                    'Referer': `${NETMIRROR_BASE}/tv/home`
+                    'Referer': `${NETMIRROR_BASE}/`
                 }
             }
         );
@@ -425,8 +426,9 @@ function getStreamingLinks(contentId, title, platform) {
 
                     // Construct absolute URL
                     // User explicitly requested double slash // which appears in working links
-                    // NETMIRROR_BASE has trailing slash, fullUrl has leading slash -> //
-                    fullUrl = NETMIRROR_BASE + fullUrl;
+                    // NETMIRROR_BASE has NO trailing slash, fullUrl has leading slash
+                    // We need to add an extra slash to get //
+                    fullUrl = NETMIRROR_BASE + '/' + fullUrl;
 
                     sources.push({
                         url: fullUrl,
