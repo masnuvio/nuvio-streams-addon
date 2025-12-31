@@ -374,13 +374,18 @@ function getStreamingLinks(contentId, title, platform) {
             'ott': ott,
             'hd': 'on'
         };
-
         const cookieString = Object.entries(cookies)
             .map(([key, value]) => `${key}=${value}`)
             .join('; ');
 
-        // Use the working URL structure from Kotlin version
-        const playlistUrl = `${NETMIRROR_BASE}/tv/playlist.php`;
+        // Platform-specific playlist endpoints
+        const playlistEndpoints = {
+            'netflix': `${NETMIRROR_BASE}/playlist.php`,
+            'primevideo': `${NETMIRROR_BASE}/pv/playlist.php`,
+            'disney': `${NETMIRROR_BASE}/mobile/hs/playlist.php`
+        };
+
+        const playlistUrl = playlistEndpoints[platform.toLowerCase()] || playlistEndpoints['netflix'];
 
         return makeRequest(
             `${playlistUrl}?id=${contentId}&t=${encodeURIComponent(title)}&tm=${getUnixTime()}`,
@@ -406,16 +411,21 @@ function getStreamingLinks(contentId, title, platform) {
         playlist.forEach(item => {
             if (item.sources) {
                 item.sources.forEach(source => {
-                    // Use the working URL construction from Kotlin version
-                    let fullUrl = source.file.replace('/tv/', '/');
+                    // Handle URL construction
+                    let fullUrl = source.file;
+
+                    // Remove /tv/ prefix if present (legacy)
+                    if (fullUrl.includes('/tv/')) {
+                        fullUrl = fullUrl.replace('/tv/', '/');
+                    }
+
+                    // Ensure it starts with /
                     if (!fullUrl.startsWith('/')) fullUrl = '/' + fullUrl;
 
-                    // Fix double slash issue: NETMIRROR_BASE has trailing slash
-                    if (NETMIRROR_BASE.endsWith('/') && fullUrl.startsWith('/')) {
-                        fullUrl = NETMIRROR_BASE + fullUrl.substring(1);
-                    } else {
-                        fullUrl = NETMIRROR_BASE + fullUrl;
-                    }
+                    // Construct absolute URL
+                    // Note: NETMIRROR_BASE has trailing slash, fullUrl has leading slash
+                    // We allow the double slash // as it appears in working links provided by user
+                    fullUrl = NETMIRROR_BASE + (fullUrl.startsWith('/') ? fullUrl.substring(1) : fullUrl);
 
                     sources.push({
                         url: fullUrl,
