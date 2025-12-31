@@ -7,10 +7,10 @@ console.log('[NetMirror] Initializing NetMirror provider');
 
 // Constants
 const TMDB_API_KEY = "439c478a771f35c05022f9feabcca01c";
-const NETMIRROR_BASE = 'https://net51.cc/'; // Restored trailing slash
+const NETMIRROR_BASE = 'https://net51.cc'; // Removed trailing slash for better control
 const BASE_HEADERS = {
     'X-Requested-With': 'XMLHttpRequest',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36', // Desktop UA
+    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/119.0.6045.109 Mobile/15E148 Safari/604.1', // Mobile UA
     'Accept': 'application/json, text/plain, */*',
     'Accept-Language': 'en-US,en;q=0.9',
     'Accept-Encoding': 'gzip, deflate, br',
@@ -85,8 +85,8 @@ function bypass() {
             throw new Error('Max bypass attempts reached');
         }
 
-        // Reverted to TV auth endpoint which is known to work
-        return makeRequest(`${NETMIRROR_BASE}/tv/p.php`, {
+        // Use Web/Mobile auth endpoint
+        return makeRequest(`${NETMIRROR_BASE}/p.php`, {
             method: 'POST',
             headers: BASE_HEADERS
         }).then(function (response) {
@@ -97,7 +97,8 @@ function bypass() {
             if (setCookieHeader) {
                 // Axios headers are usually lowercase and can be array or string
                 const cookieString = Array.isArray(setCookieHeader) ? setCookieHeader.join('; ') : setCookieHeader;
-                const cookieMatch = cookieString.match(/t_hash_t=([^;]+)/);
+                // Support both t_hash_t (TV) and t_hash (Web/Mobile)
+                const cookieMatch = cookieString.match(/t_hash(?:_t)?=([^;]+)/);
                 if (cookieMatch) {
                     extractedCookie = cookieMatch[1];
                 }
@@ -105,6 +106,7 @@ function bypass() {
 
             return response.text().then(function (responseText) {
                 // Check if response contains success indicator
+                // Web endpoint returns JSON {"r":"n"}, TV returns text with "r":"n"
                 if (!responseText.includes('"r":"n"')) {
                     console.log(`[NetMirror] Bypass attempt ${attempts + 1} failed, retrying...`);
                     return attemptBypass(attempts + 1);
@@ -139,7 +141,7 @@ function searchContent(query, platform) {
 
     return bypass().then(function (cookie) {
         const cookies = {
-            't_hash_t': cookie,
+            't_hash_t': cookie, // Using t_hash_t key as expected by server logic (hopefully)
             'user_token': '233123f803cf02184bf6c67e149cdd50',
             'hd': 'on',
             'ott': ott
@@ -151,9 +153,9 @@ function searchContent(query, platform) {
 
         // Platform-specific search endpoints
         const searchEndpoints = {
-            'netflix': `${NETMIRROR_BASE}search.php`,
-            'primevideo': `${NETMIRROR_BASE}pv/search.php`,
-            'disney': `${NETMIRROR_BASE}mobile/hs/search.php`
+            'netflix': `${NETMIRROR_BASE}/search.php`,
+            'primevideo': `${NETMIRROR_BASE}/pv/search.php`,
+            'disney': `${NETMIRROR_BASE}/mobile/hs/search.php`
         };
 
         const searchUrl = searchEndpoints[platform.toLowerCase()] || searchEndpoints['netflix'];
@@ -164,7 +166,7 @@ function searchContent(query, platform) {
                 headers: {
                     ...BASE_HEADERS,
                     'Cookie': cookieString,
-                    'Referer': `${NETMIRROR_BASE}tv/home`
+                    'Referer': `${NETMIRROR_BASE}/`
                 }
             }
         );
@@ -212,9 +214,9 @@ function getEpisodesFromSeason(seriesId, seasonId, platform, page) {
 
         // Platform-specific episodes endpoints
         const episodesEndpoints = {
-            'netflix': `${NETMIRROR_BASE}episodes.php`,
-            'primevideo': `${NETMIRROR_BASE}pv/episodes.php`,
-            'disney': `${NETMIRROR_BASE}mobile/hs/episodes.php`
+            'netflix': `${NETMIRROR_BASE}/episodes.php`,
+            'primevideo': `${NETMIRROR_BASE}/pv/episodes.php`,
+            'disney': `${NETMIRROR_BASE}/mobile/hs/episodes.php`
         };
 
         const episodesUrl = episodesEndpoints[platform.toLowerCase()] || episodesEndpoints['netflix'];
@@ -226,7 +228,7 @@ function getEpisodesFromSeason(seriesId, seasonId, platform, page) {
                     headers: {
                         ...BASE_HEADERS,
                         'Cookie': cookieString,
-                        'Referer': `${NETMIRROR_BASE}tv/home`
+                        'Referer': `${NETMIRROR_BASE}/`
                     }
                 }
             ).then(function (response) {
@@ -277,9 +279,9 @@ function loadContent(contentId, platform) {
 
         // Platform-specific post endpoints
         const postEndpoints = {
-            'netflix': `${NETMIRROR_BASE}post.php`,
-            'primevideo': `${NETMIRROR_BASE}pv/post.php`,
-            'disney': `${NETMIRROR_BASE}mobile/hs/post.php`
+            'netflix': `${NETMIRROR_BASE}/post.php`,
+            'primevideo': `${NETMIRROR_BASE}/pv/post.php`,
+            'disney': `${NETMIRROR_BASE}/mobile/hs/post.php`
         };
 
         const postUrl = postEndpoints[platform.toLowerCase()] || postEndpoints['netflix'];
@@ -290,7 +292,7 @@ function loadContent(contentId, platform) {
                 headers: {
                     ...BASE_HEADERS,
                     'Cookie': cookieString,
-                    'Referer': `${NETMIRROR_BASE}tv/home`
+                    'Referer': `${NETMIRROR_BASE}/`
                 }
             }
         );
@@ -376,12 +378,19 @@ function getStreamingLinks(contentId, title, platform) {
             'ott': ott,
             'hd': 'on'
         };
+
         const cookieString = Object.entries(cookies)
             .map(([key, value]) => `${key}=${value}`)
             .join('; ');
 
-        // Use the working URL structure from Kotlin version / Original JS
-        const playlistUrl = `${NETMIRROR_BASE}tv/playlist.php`;
+        // Platform-specific playlist endpoints (Mobile/Web)
+        const playlistEndpoints = {
+            'netflix': `${NETMIRROR_BASE}/playlist.php`,
+            'primevideo': `${NETMIRROR_BASE}/pv/playlist.php`,
+            'disney': `${NETMIRROR_BASE}/mobile/hs/playlist.php`
+        };
+
+        const playlistUrl = playlistEndpoints[platform.toLowerCase()] || playlistEndpoints['netflix'];
 
         return makeRequest(
             `${playlistUrl}?id=${contentId}&t=${encodeURIComponent(title)}&tm=${getUnixTime()}`,
@@ -389,7 +398,7 @@ function getStreamingLinks(contentId, title, platform) {
                 headers: {
                     ...BASE_HEADERS,
                     'Cookie': cookieString,
-                    'Referer': `${NETMIRROR_BASE}tv/home`
+                    'Referer': `${NETMIRROR_BASE}/`
                 }
             }
         );
@@ -420,8 +429,9 @@ function getStreamingLinks(contentId, title, platform) {
 
                     // Construct absolute URL
                     // User explicitly requested double slash // which appears in working links
-                    // NETMIRROR_BASE has trailing slash, fullUrl has leading slash -> //
-                    fullUrl = NETMIRROR_BASE + fullUrl;
+                    // NETMIRROR_BASE has NO trailing slash, fullUrl has leading slash
+                    // We need to add an extra slash to get //
+                    fullUrl = NETMIRROR_BASE + '/' + fullUrl;
 
                     sources.push({
                         url: fullUrl,
