@@ -409,12 +409,19 @@ function getStreamingLinks(contentId, title, platform) {
                     // Use the working URL construction from Kotlin version
                     let fullUrl = source.file.replace('/tv/', '/');
                     if (!fullUrl.startsWith('/')) fullUrl = '/' + fullUrl;
-                    fullUrl = NETMIRROR_BASE + fullUrl;
+
+                    // Fix double slash issue: NETMIRROR_BASE has trailing slash
+                    if (NETMIRROR_BASE.endsWith('/') && fullUrl.startsWith('/')) {
+                        fullUrl = NETMIRROR_BASE + fullUrl.substring(1);
+                    } else {
+                        fullUrl = NETMIRROR_BASE + fullUrl;
+                    }
 
                     sources.push({
                         url: fullUrl,
                         quality: source.label,
-                        type: source.type || 'application/x-mpegURL'
+                        // Check for mpegURL in type OR .m3u8 in URL to correctly identify HLS
+                        type: (source.type && source.type.includes('mpegURL')) || fullUrl.includes('.m3u8') ? 'hls' : 'direct'
                     });
                 });
             }
@@ -702,7 +709,7 @@ function getStreams(tmdbId, mediaType = 'movie', seasonNum = null, episodeNum = 
                                     title: streamTitle,
                                     url: source.url,
                                     quality: quality,
-                                    type: 'url', // Using 'url' instead of 'hls' - Stremio may not support headers with HLS
+                                    type: source.type || 'hls', // Use detected type from source
                                     headers: streamHeaders
                                 };
                             });
