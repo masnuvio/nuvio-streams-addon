@@ -9,6 +9,7 @@ console.log('[NetMirror] Initializing NetMirror provider');
 const TMDB_API_KEY = "439c478a771f35c05022f9feabcca01c";
 const NETMIRROR_BASE = 'https://net51.cc/';
 const BASE_HEADERS = {
+    'X-Requested-With': 'XMLHttpRequest', // Added back as it was in original code
     'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/119.0.6045.109 Mobile/15E148 Safari/604.1',
     'Accept': 'application/json, text/plain, */*',
     'Accept-Language': 'en-US,en;q=0.9',
@@ -393,7 +394,7 @@ function getStreamingLinks(contentId, title, platform) {
                 headers: {
                     ...BASE_HEADERS,
                     'Cookie': cookieString,
-                    'Referer': `${NETMIRROR_BASE}/tv/home`
+                    'Referer': `${NETMIRROR_BASE}/` // Changed from /tv/home to root for mobile/web endpoints
                 }
             }
         );
@@ -423,9 +424,9 @@ function getStreamingLinks(contentId, title, platform) {
                     if (!fullUrl.startsWith('/')) fullUrl = '/' + fullUrl;
 
                     // Construct absolute URL
-                    // Note: NETMIRROR_BASE has trailing slash, fullUrl has leading slash
-                    // We allow the double slash // as it appears in working links provided by user
-                    fullUrl = NETMIRROR_BASE + (fullUrl.startsWith('/') ? fullUrl.substring(1) : fullUrl);
+                    // User explicitly requested double slash // which appears in working links
+                    // NETMIRROR_BASE has trailing slash, fullUrl has leading slash -> //
+                    fullUrl = NETMIRROR_BASE + fullUrl;
 
                     sources.push({
                         url: fullUrl,
