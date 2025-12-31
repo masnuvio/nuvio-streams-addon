@@ -9,8 +9,8 @@ console.log('[NetMirror] Initializing NetMirror provider');
 const TMDB_API_KEY = "439c478a771f35c05022f9feabcca01c";
 const NETMIRROR_BASE = 'https://net51.cc/';
 const BASE_HEADERS = {
-    'X-Requested-With': 'XMLHttpRequest', // Added back as it was in original code
-    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/119.0.6045.109 Mobile/15E148 Safari/604.1',
+    'X-Requested-With': 'XMLHttpRequest',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36', // Desktop UA as per original code
     'Accept': 'application/json, text/plain, */*',
     'Accept-Language': 'en-US,en;q=0.9',
     'Accept-Encoding': 'gzip, deflate, br',
@@ -379,14 +379,8 @@ function getStreamingLinks(contentId, title, platform) {
             .map(([key, value]) => `${key}=${value}`)
             .join('; ');
 
-        // Platform-specific playlist endpoints
-        const playlistEndpoints = {
-            'netflix': `${NETMIRROR_BASE}/playlist.php`,
-            'primevideo': `${NETMIRROR_BASE}/pv/playlist.php`,
-            'disney': `${NETMIRROR_BASE}/mobile/hs/playlist.php`
-        };
-
-        const playlistUrl = playlistEndpoints[platform.toLowerCase()] || playlistEndpoints['netflix'];
+        // Use the working URL structure from Kotlin version / Original JS
+        const playlistUrl = `${NETMIRROR_BASE}/tv/playlist.php`;
 
         return makeRequest(
             `${playlistUrl}?id=${contentId}&t=${encodeURIComponent(title)}&tm=${getUnixTime()}`,
@@ -394,7 +388,7 @@ function getStreamingLinks(contentId, title, platform) {
                 headers: {
                     ...BASE_HEADERS,
                     'Cookie': cookieString,
-                    'Referer': `${NETMIRROR_BASE}/` // Changed from /tv/home to root for mobile/web endpoints
+                    'Referer': `${NETMIRROR_BASE}/tv/home` // Reverted to /tv/home
                 }
             }
         );
