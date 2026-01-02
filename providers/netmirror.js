@@ -442,7 +442,7 @@ function getStreamingLinks(contentId, title, platform) {
                         // The cookie itself is in format: hash::timestamp::ni
                         // So we replace the entire 'unknown::ni' with the cookie value
                         if (fullUrl.includes('in=unknown::ni')) {
-                            fullUrl = fullUrl.replace('in=unknown::ni', `in=${cookie}`);
+                            fullUrl = fullUrl.replace('in=unknown::ni', `in=${decodeURIComponent(cookie)}`);
                         }
 
                         sources.push({

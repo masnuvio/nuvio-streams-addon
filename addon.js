@@ -2500,7 +2500,15 @@ ${warningMessage}`;
 
         // Include headers if present (critical for providers like NetMirror, MP4Hydra, etc.)
         if (stream.headers) {
-            stremioStream.headers = stream.headers;
+            stremioStream.headers = stream.headers; // Keep top-level for potential backward compat
+
+            // Ensure behaviorHints exists
+            if (!stremioStream.behaviorHints) {
+                stremioStream.behaviorHints = {};
+            }
+
+            // Add headers to behaviorHints (standard Stremio way)
+            stremioStream.behaviorHints.headers = stream.headers;
         }
 
         // Include behaviorHints if present from provider
