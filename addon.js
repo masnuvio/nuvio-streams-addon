@@ -243,6 +243,11 @@ const { getStreams: getNetMirrorStreams } = require('./providers/netmirror.js');
 const ENABLE_CASTLE_PROVIDER = process.env.ENABLE_CASTLE_PROVIDER !== 'false';
 console.log(`[addon.js] Castle provider fetching enabled: ${ENABLE_CASTLE_PROVIDER}`);
 const { getStreams: getCastleStreams } = require('./providers/castle.js');
+
+// NEW: Read environment variable for VFlix
+const ENABLE_VFLIX_PROVIDER = process.env.ENABLE_VFLIX_PROVIDER !== 'false';
+console.log(`[addon.js] VFlix provider fetching enabled: ${ENABLE_VFLIX_PROVIDER}`);
+const { getStreams: getVFlixStreams } = require('./providers/vflix.js');
 const axios = require('axios'); // For external provider requests
 
 // Helper function to make requests to external provider services
@@ -2008,6 +2013,24 @@ builder.defineStreamHandler(async (args) => {
                 console.error(`[Castle] Error:`, err.message);
                 return [];
             }
+        },
+
+        // VFlix provider
+        vflix: async () => {
+            if (!ENABLE_VFLIX_PROVIDER) return [];
+            if (!shouldFetch('vflix')) return [];
+            try {
+                const cached = await getStreamFromCache('vflix', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'VFlix' }));
+
+                console.log(`[VFlix] Fetching new streams...`);
+                const streams = await getVFlixStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('vflix', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'VFlix' }));
+            } catch (err) {
+                console.error(`[VFlix] Error:`, err.message);
+                return [];
+            }
         }
     };
 
@@ -2047,7 +2070,8 @@ builder.defineStreamHandler(async (args) => {
             timeProvider('Xprime', providerFetchFunctions.xprime()),
             timeProvider('Yflix', providerFetchFunctions.yflix()),
             timeProvider('NetMirror', providerFetchFunctions.netmirror()),
-            timeProvider('Castle', providerFetchFunctions.castle())
+            timeProvider('Castle', providerFetchFunctions.castle()),
+            timeProvider('VFlix', providerFetchFunctions.vflix())
         ];
 
         // Implement proper timeout that returns results immediately after 10 seconds
@@ -2079,7 +2103,7 @@ builder.defineStreamHandler(async (args) => {
             ));
 
             providerResults = currentResults.map((result, index) => {
-                const providerNames = ['ShowBox', 'Soaper TV', 'VidSrc', 'VidZee', 'MP4Hydra', 'UHDMovies', 'MoviesMod', 'TopMovies', 'MoviesDrive', '4KHDHub', 'Vixsrc', 'MovieBox', 'AnimeKai', 'Cinevibe', 'DahmerMovies', 'DVDPlay', 'HDHub4u', 'MalluMV', 'Mapple', 'StreamFlix', 'Videasy', 'VidLink', 'VidNestAnime', 'VidNest', 'VidRock', 'Watch32', 'Xprime', 'Yflix', 'NetMirror', 'Castle'];
+                const providerNames = ['ShowBox', 'Soaper TV', 'VidSrc', 'VidZee', 'MP4Hydra', 'UHDMovies', 'MoviesMod', 'TopMovies', 'MoviesDrive', '4KHDHub', 'Vixsrc', 'MovieBox', 'AnimeKai', 'Cinevibe', 'DahmerMovies', 'DVDPlay', 'HDHub4u', 'MalluMV', 'Mapple', 'StreamFlix', 'Videasy', 'VidLink', 'VidNestAnime', 'VidNest', 'VidRock', 'Watch32', 'Xprime', 'Yflix', 'NetMirror', 'Castle', 'VFlix'];
                 if (result.status === 'fulfilled' && Array.isArray(result.value) && result.value.length > 0) {
                     console.log(`[Timeout] Provider ${providerNames[index]} completed with ${result.value.length} streams.`);
                     return result.value;
@@ -2130,7 +2154,8 @@ builder.defineStreamHandler(async (args) => {
             'Xprime': ENABLE_XPRIME_PROVIDER && shouldFetch('xprime') ? applyAllStreamFilters(providerResults[26], 'Xprime', minQualitiesPreferences.xprime, excludeCodecsPreferences.xprime) : [],
             'Yflix': ENABLE_YFLIX_PROVIDER && shouldFetch('yflix') ? applyAllStreamFilters(providerResults[27], 'Yflix', minQualitiesPreferences.yflix, excludeCodecsPreferences.yflix) : [],
             'NetMirror': ENABLE_NETMIRROR_PROVIDER && shouldFetch('netmirror') ? applyAllStreamFilters(providerResults[28], 'NetMirror', minQualitiesPreferences.netmirror, excludeCodecsPreferences.netmirror) : [],
-            'Castle': ENABLE_CASTLE_PROVIDER && shouldFetch('castle') ? applyAllStreamFilters(providerResults[29], 'Castle', minQualitiesPreferences.castle, excludeCodecsPreferences.castle) : []
+            'Castle': ENABLE_CASTLE_PROVIDER && shouldFetch('castle') ? applyAllStreamFilters(providerResults[29], 'Castle', minQualitiesPreferences.castle, excludeCodecsPreferences.castle) : [],
+            'VFlix': ENABLE_VFLIX_PROVIDER && shouldFetch('vflix') ? applyAllStreamFilters(providerResults[30], 'VFlix', minQualitiesPreferences.vflix, excludeCodecsPreferences.vflix) : []
         };
 
         // Sort streams for each provider by quality, then size
@@ -2150,7 +2175,7 @@ builder.defineStreamHandler(async (args) => {
 
         // Combine streams in the preferred provider order
         combinedRawStreams = [];
-        const providerOrder = ['ShowBox', 'MovieBox', 'NetMirror', 'Castle', 'UHDMovies', '4KHDHub', 'MoviesMod', 'TopMovies', 'MoviesDrive', 'Soaper TV', 'VidZee', 'MP4Hydra', 'VidSrc', 'Vixsrc', 'AnimeKai', 'Cinevibe', 'DahmerMovies', 'DVDPlay', 'HDHub4u', 'MalluMV', 'Mapple', 'StreamFlix', 'Videasy', 'VidLink', 'VidNestAnime', 'VidNest', 'VidRock', 'Watch32', 'Xprime', 'Yflix'];
+        const providerOrder = ['ShowBox', 'MovieBox', 'NetMirror', 'Castle', 'VFlix', 'UHDMovies', '4KHDHub', 'MoviesMod', 'TopMovies', 'MoviesDrive', 'Soaper TV', 'VidZee', 'MP4Hydra', 'VidSrc', 'Vixsrc', 'AnimeKai', 'Cinevibe', 'DahmerMovies', 'DVDPlay', 'HDHub4u', 'MalluMV', 'Mapple', 'StreamFlix', 'Videasy', 'VidLink', 'VidNestAnime', 'VidNest', 'VidRock', 'Watch32', 'Xprime', 'Yflix'];
         providerOrder.forEach(providerKey => {
             if (streamsByProvider[providerKey] && streamsByProvider[providerKey].length > 0) {
                 combinedRawStreams.push(...streamsByProvider[providerKey]);
@@ -2391,6 +2416,9 @@ builder.defineStreamHandler(async (args) => {
             nameDisplay = stream.title || stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
         } else if (stream.provider === 'Castle') {
             // For Castle, use the name field from the provider (includes language)
+            nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+        } else if (stream.provider === 'VFlix') {
+            // For VFlix, use the name field from the provider
             nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
         } else if (stream.provider === 'Videasy') {
             // For Videasy, use the name field from the provider (includes server name and language)
