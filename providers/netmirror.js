@@ -85,8 +85,8 @@ function bypass() {
             throw new Error('Max bypass attempts reached');
         }
 
-        // Use Web/Mobile auth endpoint
-        return makeRequest(`${NETMIRROR_BASE}/p.php`, {
+        // Use Mobile auth endpoint
+        return makeRequest(`${NETMIRROR_BASE}/mobile/p.php`, {
             method: 'POST',
             headers: BASE_HEADERS
         }).then(function (response) {
@@ -106,7 +106,6 @@ function bypass() {
 
             return response.text().then(function (responseText) {
                 // Check if response contains success indicator
-                // Web endpoint returns JSON {"r":"n"}, TV returns text with "r":"n"
                 if (!responseText.includes('"r":"n"')) {
                     console.log(`[NetMirror] Bypass attempt ${attempts + 1} failed, retrying...`);
                     return attemptBypass(attempts + 1);
@@ -141,7 +140,7 @@ function searchContent(query, platform) {
 
     return bypass().then(function (cookie) {
         const cookies = {
-            't_hash_t': cookie, // Using t_hash_t key as expected by server logic (hopefully)
+            't_hash': cookie, // Mobile/Web uses t_hash
             'user_token': '233123f803cf02184bf6c67e149cdd50',
             'hd': 'on',
             'ott': ott
@@ -151,13 +150,15 @@ function searchContent(query, platform) {
             .map(([key, value]) => `${key}=${value}`)
             .join('; ');
 
-        // Platform-specific search endpoints
+        // Platform-specific search endpoints (Mobile)
         const searchEndpoints = {
-            'netflix': `${NETMIRROR_BASE}/search.php`,
-            'primevideo': `${NETMIRROR_BASE}/pv/search.php`,
+            'netflix': `${NETMIRROR_BASE}/mobile/search.php`,
+            'primevideo': `${NETMIRROR_BASE}/mobile/pv/search.php`, // Assumption, fallback to web if fails?
             'disney': `${NETMIRROR_BASE}/mobile/hs/search.php`
         };
 
+        // Fallback for Prime if mobile endpoint doesn't exist (we didn't probe it)
+        // But for Netflix we know /mobile/search.php exists
         const searchUrl = searchEndpoints[platform.toLowerCase()] || searchEndpoints['netflix'];
 
         return makeRequest(
@@ -199,7 +200,7 @@ function getEpisodesFromSeason(seriesId, seasonId, platform, page) {
 
     return bypass().then(function (cookie) {
         const cookies = {
-            't_hash_t': cookie,
+            't_hash': cookie,
             'user_token': '233123f803cf02184bf6c67e149cdd50',
             'ott': ott,
             'hd': 'on'
@@ -212,10 +213,10 @@ function getEpisodesFromSeason(seriesId, seasonId, platform, page) {
         const episodes = [];
         let currentPage = page || 1;
 
-        // Platform-specific episodes endpoints
+        // Platform-specific episodes endpoints (Mobile)
         const episodesEndpoints = {
-            'netflix': `${NETMIRROR_BASE}/episodes.php`,
-            'primevideo': `${NETMIRROR_BASE}/pv/episodes.php`,
+            'netflix': `${NETMIRROR_BASE}/mobile/episodes.php`, // Assumption
+            'primevideo': `${NETMIRROR_BASE}/mobile/pv/episodes.php`,
             'disney': `${NETMIRROR_BASE}/mobile/hs/episodes.php`
         };
 
@@ -267,7 +268,7 @@ function loadContent(contentId, platform) {
 
     return bypass().then(function (cookie) {
         const cookies = {
-            't_hash_t': cookie,
+            't_hash': cookie,
             'user_token': '233123f803cf02184bf6c67e149cdd50',
             'ott': ott,
             'hd': 'on'
@@ -277,10 +278,10 @@ function loadContent(contentId, platform) {
             .map(([key, value]) => `${key}=${value}`)
             .join('; ');
 
-        // Platform-specific post endpoints
+        // Platform-specific post endpoints (Mobile)
         const postEndpoints = {
-            'netflix': `${NETMIRROR_BASE}/post.php`,
-            'primevideo': `${NETMIRROR_BASE}/pv/post.php`,
+            'netflix': `${NETMIRROR_BASE}/mobile/post.php`,
+            'primevideo': `${NETMIRROR_BASE}/mobile/pv/post.php`,
             'disney': `${NETMIRROR_BASE}/mobile/hs/post.php`
         };
 
@@ -299,7 +300,12 @@ function loadContent(contentId, platform) {
     }).then(function (response) {
         return response.json();
     }).then(function (postData) {
-        console.log(`[NetMirror] Loaded: ${postData.title}`);
+        if (!postData || !postData.title) {
+            console.log('[NetMirror] Error: Loaded content data is invalid or missing title');
+            console.log('[NetMirror] Response dump:', JSON.stringify(postData));
+        } else {
+            console.log(`[NetMirror] Loaded: ${postData.title}`);
+        }
 
         let allEpisodes = postData.episodes || [];
 
@@ -373,7 +379,7 @@ function getStreamingLinks(contentId, title, platform) {
 
     return bypass().then(function (cookie) {
         const cookies = {
-            't_hash_t': cookie,
+            't_hash': cookie,
             'user_token': '233123f803cf02184bf6c67e149cdd50',
             'ott': ott,
             'hd': 'on'
@@ -383,10 +389,10 @@ function getStreamingLinks(contentId, title, platform) {
             .map(([key, value]) => `${key}=${value}`)
             .join('; ');
 
-        // Platform-specific playlist endpoints (Mobile/Web)
+        // Platform-specific playlist endpoints (Mobile)
         const playlistEndpoints = {
-            'netflix': `${NETMIRROR_BASE}/playlist.php`,
-            'primevideo': `${NETMIRROR_BASE}/pv/playlist.php`,
+            'netflix': `${NETMIRROR_BASE}/mobile/playlist.php`,
+            'primevideo': `${NETMIRROR_BASE}/mobile/pv/playlist.php`,
             'disney': `${NETMIRROR_BASE}/mobile/hs/playlist.php`
         };
 
@@ -401,69 +407,76 @@ function getStreamingLinks(contentId, title, platform) {
                     'Referer': `${NETMIRROR_BASE}/`
                 }
             }
-        );
-    }).then(function (response) {
-        return response.json();
-    }).then(function (playlist) {
-        if (!Array.isArray(playlist) || playlist.length === 0) {
-            console.log('[NetMirror] No streaming links found');
-            return { sources: [], subtitles: [] };
-        }
-
-        const sources = [];
-        const subtitles = [];
-
-        playlist.forEach(item => {
-            if (item.sources) {
-                item.sources.forEach(source => {
-                    // Handle URL construction
-                    let fullUrl = source.file;
-
-                    // Remove /tv/ prefix if present (legacy)
-                    if (fullUrl.includes('/tv/')) {
-                        fullUrl = fullUrl.replace('/tv/', '/');
-                    }
-
-                    // Ensure it starts with /
-                    if (!fullUrl.startsWith('/')) fullUrl = '/' + fullUrl;
-
-                    // Construct absolute URL
-                    // User explicitly requested double slash // which appears in working links
-                    // NETMIRROR_BASE has NO trailing slash, fullUrl has leading slash
-                    // We need to add an extra slash to get //
-                    fullUrl = NETMIRROR_BASE + '/' + fullUrl;
-
-                    sources.push({
-                        url: fullUrl,
-                        quality: source.label,
-                        // Check for mpegURL in type OR .m3u8 in URL to correctly identify HLS
-                        type: (source.type && source.type.includes('mpegURL')) || fullUrl.includes('.m3u8') ? 'hls' : 'direct'
-                    });
-                });
+        ).then(function (response) {
+            return response.json();
+        }).then(function (playlist) {
+            if (!Array.isArray(playlist) || playlist.length === 0) {
+                console.log('[NetMirror] No streaming links found');
+                return { sources: [], subtitles: [] };
             }
 
-            if (item.tracks) {
-                item.tracks
-                    .filter(track => track.kind === 'captions')
-                    .forEach(track => {
-                        // Convert relative URLs to absolute URLs for subtitles
-                        let fullSubUrl = track.file;
-                        if (track.file.startsWith('/') && !track.file.startsWith('//')) {
-                            fullSubUrl = NETMIRROR_BASE + track.file;
-                        } else if (track.file.startsWith('//')) {
-                            fullSubUrl = 'https:' + track.file;
+            const sources = [];
+            const subtitles = [];
+
+            playlist.forEach(item => {
+                if (item.sources) {
+                    item.sources.forEach(source => {
+                        // Handle URL construction
+                        let fullUrl = source.file;
+
+                        // Remove /tv/ prefix if present (legacy)
+                        if (fullUrl.includes('/tv/')) {
+                            fullUrl = fullUrl.replace('/tv/', '/');
                         }
 
-                        subtitles.push({
-                            url: fullSubUrl,
-                            language: track.label
+                        // Ensure it starts with /
+                        if (!fullUrl.startsWith('/')) fullUrl = '/' + fullUrl;
+
+                        // Construct absolute URL
+                        // User explicitly requested double slash // which appears in working links
+                        // NETMIRROR_BASE has NO trailing slash, fullUrl has leading slash
+                        // We need to add an extra slash to get //
+                        fullUrl = NETMIRROR_BASE + '/' + fullUrl;
+
+                        // Replace 'unknown::ni' token with actual cookie hash
+                        // The cookie itself is in format: hash::timestamp::ni
+                        // So we replace the entire 'unknown::ni' with the cookie value
+                        if (fullUrl.includes('in=unknown::ni')) {
+                            fullUrl = fullUrl.replace('in=unknown::ni', `in=${cookie}`);
+                        }
+
+                        sources.push({
+                            url: fullUrl,
+                            quality: source.label,
+                            // Check for mpegURL in type OR .m3u8 in URL to correctly identify HLS
+                            type: (source.type && source.type.includes('mpegURL')) || fullUrl.includes('.m3u8') ? 'hls' : 'direct'
                         });
                     });
-            }
-        });
+                }
 
-        console.log(`[NetMirror] Found ${sources.length} streaming sources and ${subtitles.length} subtitle tracks`);
-        return { sources, subtitles };
+                if (item.tracks) {
+                    item.tracks
+                        .filter(track => track.kind === 'captions')
+                        .forEach(track => {
+                            // Convert relative URLs to absolute URLs for subtitles
+                            let fullSubUrl = track.file;
+                            if (track.file.startsWith('/') && !track.file.startsWith('//')) {
+                                fullSubUrl = NETMIRROR_BASE + track.file;
+                            } else if (track.file.startsWith('//')) {
+                                fullSubUrl = 'https:' + track.file;
+                            }
+
+                            subtitles.push({
+                                url: fullSubUrl,
+                                language: track.label
+                            });
+                        });
+                }
+            });
+
+            console.log(`[NetMirror] Found ${sources.length} streaming sources and ${subtitles.length} subtitle tracks`);
+            return { sources, subtitles };
+        });
     });
 }
 
