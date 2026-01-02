@@ -2386,8 +2386,9 @@ builder.defineStreamHandler(async (args) => {
             // For MovieBox, use the name field from the provider (includes language if detected)
             nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
         } else if (stream.provider === 'NetMirror') {
-            // For NetMirror, use the name field from the provider (includes platform)
-            nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+            // For NetMirror, use the title field from the provider which contains quality info
+            // Fallback to name if title is missing
+            nameDisplay = stream.title || stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
         } else if (stream.provider === 'Castle') {
             // For Castle, use the name field from the provider (includes language)
             nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
