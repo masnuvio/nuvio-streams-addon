@@ -2,71 +2,66 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 const BASE_URL = "https://xdmovies.site";
+const TOKEN = "7297skkihkajwnsgaklakshuwd"; // Decoded from Kotlin
 const HEADERS = {
-    "x-auth-token": "7297skkihkajwnsgaklakshuwd",
+    "x-auth-token": TOKEN,
     "x-requested-with": "XMLHttpRequest",
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 };
 
 async function testXDMovies() {
-    console.log("=== Testing XDMovies API ===");
+    console.log("=== Testing XDMovies API (Deep Debug) ===");
 
-    // 1. Search
-    const query = "Inception";
-    console.log(`\n1. Searching for: ${query}`);
+    // 1. Check Homepage
+    try {
+        console.log(`\n1. Checking Homepage: ${BASE_URL}`);
+        const homeRes = await axios.get(BASE_URL, {
+            headers: HEADERS,
+            validateStatus: () => true
+        });
+        console.log(`Status: ${homeRes.status}`);
+        if (homeRes.status === 200) {
+            const $ = cheerio.load(homeRes.data);
+            const title = $('title').text().trim();
+            console.log(`Page Title: ${title}`);
+        }
+    } catch (e) {
+        console.log(`Homepage failed: ${e.message}`);
+    }
+
+    // 2. Search with Token
+    const query = "Avengers";
     const searchUrl = `${BASE_URL}/php/search_api.php?query=${query}&fuzzy=true`;
 
     try {
-        console.log(`Requesting: ${searchUrl}`);
+        console.log(`\n2. Searching for '${query}' (With Token)`);
+        console.log(`URL: ${searchUrl}`);
         const searchRes = await axios.get(searchUrl, {
             headers: HEADERS,
-            validateStatus: () => true // Accept all status codes
+            validateStatus: () => true
         });
 
         console.log(`Status: ${searchRes.status}`);
-        console.log(`Response Data Type: ${typeof searchRes.data}`);
-        console.log(`Response Data:`, JSON.stringify(searchRes.data).substring(0, 500)); // Log first 500 chars
+        console.log(`Data:`, JSON.stringify(searchRes.data).substring(0, 200));
+    } catch (e) {
+        console.log(`Search failed: ${e.message}`);
+    }
 
-        const results = searchRes.data;
+    // 3. Search WITHOUT Token (to check if token matters)
+    try {
+        console.log(`\n3. Searching for '${query}' (WITHOUT Token)`);
+        const noTokenHeaders = { ...HEADERS };
+        delete noTokenHeaders['x-auth-token'];
 
-        if (results.length === 0) return;
-
-        const firstResult = results[0];
-        console.log("First result:", firstResult);
-
-        // 2. Load Details
-        const detailUrl = BASE_URL + firstResult.path;
-        console.log(`\n2. Loading details from: ${detailUrl}`);
-
-        const detailRes = await axios.get(detailUrl, { headers: HEADERS });
-        const $ = cheerio.load(detailRes.data);
-
-        // 3. Extract Links
-        console.log("\n3. Extracting Download Links:");
-        const links = [];
-        $('div.download-item a').each((i, el) => {
-            const link = $(el).attr('href');
-            const text = $(el).text().trim();
-            if (link) {
-                console.log(`- [${text}] ${link}`);
-                links.push(link);
-            }
+        const searchRes = await axios.get(searchUrl, {
+            headers: noTokenHeaders,
+            validateStatus: () => true
         });
 
-        if (links.length === 0) {
-            console.log("No download links found in div.download-item a");
-            // Try TV show selector just in case
-            $('.season-section').each((i, el) => {
-                console.log("Found season section...");
-            });
-        }
-
-    } catch (error) {
-        console.error("Error:", error.message);
-        if (error.response) {
-            console.error("Status:", error.response.status);
-            console.error("Data:", error.response.data);
-        }
+        console.log(`Status: ${searchRes.status}`);
+        console.log(`Data:`, JSON.stringify(searchRes.data).substring(0, 200));
+    } catch (e) {
+        console.log(`Search failed: ${e.message}`);
     }
 }
 
