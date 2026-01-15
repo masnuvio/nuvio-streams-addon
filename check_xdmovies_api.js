@@ -17,9 +17,17 @@ async function testXDMovies() {
     const searchUrl = `${BASE_URL}/php/search_api.php?query=${query}&fuzzy=true`;
 
     try {
-        const searchRes = await axios.get(searchUrl, { headers: HEADERS });
+        console.log(`Requesting: ${searchUrl}`);
+        const searchRes = await axios.get(searchUrl, {
+            headers: HEADERS,
+            validateStatus: () => true // Accept all status codes
+        });
+
+        console.log(`Status: ${searchRes.status}`);
+        console.log(`Response Data Type: ${typeof searchRes.data}`);
+        console.log(`Response Data:`, JSON.stringify(searchRes.data).substring(0, 500)); // Log first 500 chars
+
         const results = searchRes.data;
-        console.log(`Found ${results.length} results.`);
 
         if (results.length === 0) return;
 
