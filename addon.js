@@ -1415,100 +1415,121 @@ builder.defineStreamHandler(async (args) => {
                 if (qualityB !== qualityA) {
                     return qualityB - qualityA; // Higher quality first
                 }
-
-                if (combinedRawStreams.length === 0) {
-                    console.log(`  No streams found from any provider for TMDB ${tmdbTypeFromId}/${tmdbId}`);
-                    return { streams: [] };
-                }
-
-                console.log(`Total streams after provider-level sorting: ${combinedRawStreams.length}`);
-
-                // Format and send the response
-                const stremioStreamObjects = combinedRawStreams.map((stream) => {
-                    // --- NEW: Special handling for TopMovies to use its pre-formatted titles ---
-                    if (stream.provider === 'TopMovies') {
-                        return {
-                            name: stream.name,    // Use the name from the provider, e.g., "TopMovies - 1080p"
-                            title: stream.title,  // Use the title from the provider, e.g., "Filename.mkv\nSize"
-                            url: stream.url,
-                            type: 'url',
-                            availability: 2,
-                            behaviorHints: {
-                                notWebReady: true
-                            }
-                        };
-                    }
-
-                    const qualityLabel = stream.quality || 'UNK'; // UNK for unknown
-
-                    let displayTitle;
-
-                    if (stream.provider === 'ShowBox' && stream.title) {
-                        displayTitle = stream.title; // Use the raw filename from ShowBox
-                    } else if (stream.provider === '4KHDHub' && stream.title) {
-                        displayTitle = stream.title; // Use the enhanced title that includes filename and size
-                    } else if (tmdbTypeFromId === 'tv' && seasonNum !== null && episodeNum !== null && movieOrSeriesTitle) {
-                        displayTitle = `${movieOrSeriesTitle} S${String(seasonNum).padStart(2, '0')}E${String(episodeNum).padStart(2, '0')}`;
-                    } else if (movieOrSeriesTitle) {
-                        if (tmdbTypeFromId === 'movie' && movieOrSeriesYear) {
-                            displayTitle = `${movieOrSeriesTitle} (${movieOrSeriesYear})`;
-                        } else {
-                            displayTitle = movieOrSeriesTitle;
-                        }
-                    } else {
-                        displayTitle = stream.title || "Unknown Title"; // Fallback to the title from the raw stream data
-                    }
-
-                    const flagEmoji = getFlagEmojiForUrl(stream.url);
-
-                    let providerDisplayName = stream.provider; // Default to the existing provider name
-                    if (stream.provider === 'ShowBox') {
-                        providerDisplayName = 'ShowBox';
-                        if (hasAnyCookies) {
-                            providerDisplayName += ' ⚡';
-                        } else {
-                            providerDisplayName += ' (SLOW)';
-                        }
-                    } else if (stream.provider === 'PStream') {
-                        providerDisplayName = '🌐 ShowBox ⚡'; // PStream streams should show as ShowBox with lightning
-                    }
-
-                    const finalName = `[${providerDisplayName}] ${qualityLabel} ${flagEmoji}`;
-
-                    const stremioStream = {
-                        name: finalName,
-                        title: displayTitle,
-                        url: stream.url,
-                        type: stream.type || 'url',
-                        availability: 2,
-                        behaviorHints: {
-                            notWebReady: true
-                        }
-                    };
-
-                    // Include headers if present (critical for providers like NetMirror)
-                    if (stream.headers) {
-                        stremioStream.behaviorHints.headers = stream.headers;
-                    }
-
-                    return stremioStream;
-                });
-
-                console.log("--- BEGIN Stremio Stream Objects to be sent ---");
-                const streamSample = stremioStreamObjects.slice(0, 3);
-                console.log(JSON.stringify(streamSample, null, 2));
-                if (stremioStreamObjects.length > 3) {
-                    console.log(`... and ${stremioStreamObjects.length - 3} more streams`);
-                }
-                console.log("--- END Stremio Stream Objects to be sent ---");
-
-                const requestEndTime = Date.now();
-                const totalRequestTime = requestEndTime - requestStartTime;
-                console.log(`Request for ${id} completed successfully`);
-                console.log(`Total Request Time: ${totalRequestTime}ms`);
-
-                return { streams: stremioStreamObjects };
+                const sizeA = parseSize(a.size);
+                const sizeB = parseSize(b.size);
+                return sizeB - sizeA; // Larger file first if same quality
             });
+        }
 
-            // Build and export the addon
-            module.exports = builder.getInterface();
+        // Combine streams in the preferred provider order
+        combinedRawStreams = [];
+        const providerOrder = ['ShowBox', 'NetMirror', 'Castle', '4KHDHub', 'TopMovies', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink', 'XDMovies'];
+        providerOrder.forEach(providerKey => {
+            if (streamsByProvider[providerKey] && streamsByProvider[providerKey].length > 0) {
+                combinedRawStreams.push(...streamsByProvider[providerKey]);
+            }
+        });
+
+        console.log(`Total raw streams after provider-ordered fetch: ${combinedRawStreams.length}`);
+
+    } catch (error) {
+        console.error('Error during provider fetching:', error);
+        // Continue with any streams we were able to fetch
+    }
+
+    if (combinedRawStreams.length === 0) {
+        console.log(`  No streams found from any provider for TMDB ${tmdbTypeFromId}/${tmdbId}`);
+        return { streams: [] };
+    }
+
+    console.log(`Total streams after provider-level sorting: ${combinedRawStreams.length}`);
+
+    // Format and send the response
+    const stremioStreamObjects = combinedRawStreams.map((stream) => {
+        // --- NEW: Special handling for TopMovies to use its pre-formatted titles ---
+        if (stream.provider === 'TopMovies') {
+            return {
+                name: stream.name,    // Use the name from the provider, e.g., "TopMovies - 1080p"
+                title: stream.title,  // Use the title from the provider, e.g., "Filename.mkv\nSize"
+                url: stream.url,
+                type: 'url',
+                availability: 2,
+                behaviorHints: {
+                    notWebReady: true
+                }
+            };
+        }
+
+        const qualityLabel = stream.quality || 'UNK'; // UNK for unknown
+
+        let displayTitle;
+
+        if (stream.provider === 'ShowBox' && stream.title) {
+            displayTitle = stream.title; // Use the raw filename from ShowBox
+        } else if (stream.provider === '4KHDHub' && stream.title) {
+            displayTitle = stream.title; // Use the enhanced title that includes filename and size
+        } else if (tmdbTypeFromId === 'tv' && seasonNum !== null && episodeNum !== null && movieOrSeriesTitle) {
+            displayTitle = `${movieOrSeriesTitle} S${String(seasonNum).padStart(2, '0')}E${String(episodeNum).padStart(2, '0')}`;
+        } else if (movieOrSeriesTitle) {
+            if (tmdbTypeFromId === 'movie' && movieOrSeriesYear) {
+                displayTitle = `${movieOrSeriesTitle} (${movieOrSeriesYear})`;
+            } else {
+                displayTitle = movieOrSeriesTitle;
+            }
+        } else {
+            displayTitle = stream.title || "Unknown Title"; // Fallback to the title from the raw stream data
+        }
+
+        const flagEmoji = getFlagEmojiForUrl(stream.url);
+
+        let providerDisplayName = stream.provider; // Default to the existing provider name
+        if (stream.provider === 'ShowBox') {
+            providerDisplayName = 'ShowBox';
+            if (hasAnyCookies) {
+                providerDisplayName += ' ⚡';
+            } else {
+                providerDisplayName += ' (SLOW)';
+            }
+        } else if (stream.provider === 'PStream') {
+            providerDisplayName = '🌐 ShowBox ⚡'; // PStream streams should show as ShowBox with lightning
+        }
+
+        const finalName = `[${providerDisplayName}] ${qualityLabel} ${flagEmoji}`;
+
+        const stremioStream = {
+            name: finalName,
+            title: displayTitle,
+            url: stream.url,
+            type: stream.type || 'url',
+            availability: 2,
+            behaviorHints: {
+                notWebReady: true
+            }
+        };
+
+        // Include headers if present (critical for providers like NetMirror)
+        if (stream.headers) {
+            stremioStream.behaviorHints.headers = stream.headers;
+        }
+
+        return stremioStream;
+    });
+
+    console.log("--- BEGIN Stremio Stream Objects to be sent ---");
+    const streamSample = stremioStreamObjects.slice(0, 3);
+    console.log(JSON.stringify(streamSample, null, 2));
+    if (stremioStreamObjects.length > 3) {
+        console.log(`... and ${stremioStreamObjects.length - 3} more streams`);
+    }
+    console.log("--- END Stremio Stream Objects to be sent ---");
+
+    const requestEndTime = Date.now();
+    const totalRequestTime = requestEndTime - requestStartTime;
+    console.log(`Request for ${id} completed successfully`);
+    console.log(`Total Request Time: ${totalRequestTime}ms`);
+
+    return { streams: stremioStreamObjects };
+});
+
+// Build and export the addon
+module.exports = builder.getInterface();
