@@ -29,6 +29,7 @@
     "string-similarity": "^4.0.4",
     "tough-cookie": "^5.1.2",
     "ttl-cache": "^1.0.2",
+    "ws": "^8.19.0",
     "yargs": "^17.7.2"
   },
   "engines": {

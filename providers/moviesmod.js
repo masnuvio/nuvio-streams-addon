@@ -74,10 +74,10 @@ async function getMoviesModDomain() {
         const domainsPath = path.join(__dirname, '..', 'domains.json');
         const domainsData = await fs.readFile(domainsPath, 'utf8');
         const domains = JSON.parse(domainsData);
-        return domains.moviesmod || 'https://moviesmod.bid';
+        return domains.moviesmod || 'https://moviesmod.co';
     } catch (e) {
         console.warn('[MoviesMod] Could not load domains.json, using default');
-        return 'https://moviesmod.bid';
+        return 'https://moviesmod.co';
     }
 }
 

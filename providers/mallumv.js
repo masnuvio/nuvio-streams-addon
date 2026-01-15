@@ -3,7 +3,7 @@
 
 // Constants
 const TMDB_API_KEY = "439c478a771f35c05022f9feabcca01c"; // This will be replaced by Nuvio
-const BASE_URL = 'https://mallumv.fit';
+const BASE_URL = 'https://mallumv.gay';
 
 // Temporarily disable URL validation for faster results
 global.URL_VALIDATION_ENABLED = true;
@@ -14,8 +14,8 @@ const WORKING_HEADERS = {
     'Accept': 'video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5',
     'Accept-Language': 'en-US,en;q=0.9',
     'Accept-Encoding': 'identity',
-    'Origin': 'https://mallumv.fit',
-    'Referer': 'https://mallumv.fit/',
+    'Origin': 'https://mallumv.gay',
+    'Referer': 'https://mallumv.gay/',
     'Sec-Fetch-Dest': 'video',
     'Sec-Fetch-Mode': 'no-cors',
     'Sec-Fetch-Site': 'cross-site',
@@ -797,7 +797,8 @@ function searchContent(title, year, mediaType) {
                 const movieUrl = new URL('/' + match[1], BASE_URL).href;
 
                 // Extract title from the link text (look for the text between <a> tags)
-                const linkTextMatch = html.substring(match.index).match(/<a href="[^"]+">\s*<p class="home">\s*<font[^>]*>\s*<b>\s*»\s*([^<]+)/);
+                // Relaxed regex to handle different arrow characters or encoding issues
+                const linkTextMatch = html.substring(match.index).match(/<a href="[^"]+">\s*<p class="home">\s*<font[^>]*>\s*<b>\s*(?:»|┬╗|&raquo;|.*?)\s*([^<]+)/);
                 const extractedTitle = linkTextMatch ? linkTextMatch[1].trim() : title;
 
                 results.push({
@@ -923,7 +924,8 @@ function processInternalLink(internalPageUrl, quality, size, fullTitle) {
         .then(response => response.body)
         .then(html => {
             // Check for HubCloud links FIRST
-            const hubCloudMatch = html.match(/<a href="(https:\/\/[^"]*hubcloud\.[^"]*)"/);
+            // Updated regex to handle single or double quotes
+            const hubCloudMatch = html.match(/<a href=["'](https:\/\/[^"']*hubcloud\.[^"']*)["']/);
             if (hubCloudMatch) {
                 const hubCloudUrl = hubCloudMatch[1];
                 console.log(`[MalluMV] Found HubCloud URL, extracting streams...`);

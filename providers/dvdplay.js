@@ -3,7 +3,8 @@
 
 // Constants
 const TMDB_API_KEY = "439c478a771f35c05022f9feabcca01c"; // This will be replaced by Nuvio
-const BASE_URL = 'https://dvdplay.skin';
+const BASE_URL = 'https://dvdplay.cv';
+const https = require('https');
 
 // Temporarily disable URL validation for faster results
 global.URL_VALIDATION_ENABLED = true;
@@ -100,9 +101,9 @@ function makeRequest(url, options = {}) {
                     if (options.parseHTML && data) {
                         const cheerio = require('cheerio');
                         const $ = cheerio.load(data);
-                        resolve({ $: $, body: data, statusCode: response.status, headers: Object.fromEntries(response.headers) });
+                        resolve({ $: $, body: data, statusCode: response.status, headers: Object.fromEntries(response.headers), finalUrl: response.url });
                     } else {
-                        resolve({ body: data, statusCode: response.status, headers: Object.fromEntries(response.headers) });
+                        resolve({ body: data, statusCode: response.status, headers: Object.fromEntries(response.headers), finalUrl: response.url });
                     }
                 });
             })
@@ -212,6 +213,7 @@ function extractHubCloudLinks(url, referer = 'HubCloud') {
     return makeRequest(url, { parseHTML: true })
         .then(response => {
             const $ = response.$;
+            console.log(`[DVDPlay] extractHubCloudLinks landed on: ${response.finalUrl}`);
 
             var href;
             if (url.indexOf('hubcloud.php') !== -1) {
@@ -597,12 +599,16 @@ function searchContent(title, year, mediaType) {
     const encodedQuery = searchQuery.replace(/\s+/g, '+');
     const searchUrl = `${BASE_URL}/search.php?q=${encodedQuery}`;
 
+    // Temporarily disable URL validation for faster results
+    global.URL_VALIDATION_ENABLED = true;
+
     console.log(`[DVDPlay] Searching for: "${searchQuery}" at ${searchUrl}`);
 
     return makeHTTPRequest(searchUrl)
         .then(async response => {
             const html = await response.text();
-            const moviePageRegex = /<a href="([^"]+)"><p class="home">/g;
+            // Updated regex to handle newlines/spaces between tags
+            const moviePageRegex = /<a href="([^"]+)">\s*<p class="home">/g;
             const results = [];
             let match;
 
@@ -612,6 +618,11 @@ function searchContent(title, year, mediaType) {
                     title: title, // We'll extract the actual title later
                     url: movieUrl
                 });
+            }
+
+            if (results.length === 0) {
+                console.log('[DVDPlay] No results found. HTML preview:');
+                console.log(html.substring(0, 1000));
             }
 
             console.log(`[DVDPlay] Found ${results.length} search results`);
@@ -689,17 +700,69 @@ function extractDownloadLinks(pageUrl) {
         });
 }
 
+// Resolve DriveStore redirect
+function resolveDriveStore(url) {
+    return new Promise((resolve, reject) => {
+        // Use https.get to mimic the successful check_drivestore_redirect.js behavior
+        // Minimal headers seem to bypass the challenge
+        https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                // Check for meta refresh
+                const metaMatch = data.match(/<meta\s+http-equiv="refresh"\s+content="\d+;url=([^"]+)"/i);
+                if (metaMatch) {
+                    resolve(metaMatch[1]);
+                    return;
+                }
+
+                // Check for window.location.href
+                const jsHrefMatch = data.match(/window\.location\.href\s*=\s*['"]([^'"]+)['"]/);
+                if (jsHrefMatch) {
+                    const nextUrl = jsHrefMatch[1];
+                    if (nextUrl.includes('drivestore.net')) {
+                        console.log(`[DVDPlay] Recursive resolve for: ${nextUrl}`);
+                        resolve(resolveDriveStore(nextUrl));
+                    } else {
+                        resolve(nextUrl);
+                    }
+                    return;
+                }
+
+                // Check for window.location.replace
+                const jsMatch = data.match(/window\.location\.replace\(['"]([^'"]+)['"]\)/);
+                if (jsMatch) {
+                    const nextUrl = jsMatch[1];
+                    if (nextUrl.includes('drivestore.net')) {
+                        console.log(`[DVDPlay] Recursive resolve for: ${nextUrl}`);
+                        resolve(resolveDriveStore(nextUrl));
+                    } else {
+                        resolve(nextUrl);
+                    }
+                    return;
+                }
+
+                // If no redirect found, return original URL (might be the final page)
+                resolve(url);
+            });
+        }).on('error', (err) => {
+            console.error(`[DVDPlay] Error resolving DriveStore: ${err.message}`);
+            resolve(url);
+        });
+    });
+}
+
 // Process download page to get HubCloud links
 function processDownloadLink(downloadPageUrl) {
     console.log(`[DVDPlay] Processing download page: ${downloadPageUrl}`);
 
     return makeHTTPRequest(downloadPageUrl)
         .then(response => response.text())
-        .then(downloadPageHtml => {
+        .then(async downloadPageHtml => {
             const hubCloudUrls = [];
 
-            // Only look for HubCloud links
-            const hubCloudRegex = /<a href="(https?:\/\/hubcloud\.[^"]+)"/g;
+            // Look for HubCloud and other supported links
+            const hubCloudRegex = /<a href="(https?:\/\/(?:hubcloud\.|www\.drivestore\.net|uploadbox\.cc|anonfiles\.com)[^"]+)"/g;
             let hubCloudMatch;
 
             while ((hubCloudMatch = hubCloudRegex.exec(downloadPageHtml)) !== null) {
@@ -709,8 +772,17 @@ function processDownloadLink(downloadPageUrl) {
             console.log(`[DVDPlay] Found ${hubCloudUrls.length} HubCloud links in page`);
 
             // Extract final links from all HubCloud URLs
-            const finalLinkPromises = hubCloudUrls.map(hubCloudUrl => {
-                return extractHubCloudLinks(hubCloudUrl).catch(err => {
+            const finalLinkPromises = hubCloudUrls.map(async hubCloudUrl => {
+                let targetUrl = hubCloudUrl;
+
+                // Resolve DriveStore links first
+                if (targetUrl.includes('drivestore.net')) {
+                    console.log(`[DVDPlay] Resolving DriveStore link: ${targetUrl}`);
+                    targetUrl = await resolveDriveStore(targetUrl);
+                    console.log(`[DVDPlay] Resolved to: ${targetUrl}`);
+                }
+
+                return extractHubCloudLinks(targetUrl).catch(err => {
                     console.error(`[DVDPlay] Failed to extract from ${hubCloudUrl}: ${err.message}`);
                     return [];
                 });

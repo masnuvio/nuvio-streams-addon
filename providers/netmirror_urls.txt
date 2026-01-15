@@ -1,0 +1,12 @@
+Original URL: https://net51.cc//mobile/hls/81579978.m3u8?in=unknown::ni&hd=on&lang=eng
+Final URL: https://net51.cc//mobile/hls/81579978.m3u8?in=c50fb7ed04a9fea251e70a88e87cea57%3A%3A1767319335%3A%3Ani&hd=on&lang=eng
+
+Original URL: https://net51.cc//mobile/hls/81579978.m3u8?q=1080p&in=unknown::ni&hd=on&lang=eng
+Final URL: https://net51.cc//mobile/hls/81579978.m3u8?q=1080p&in=c50fb7ed04a9fea251e70a88e87cea57%3A%3A1767319335%3A%3Ani&hd=on&lang=eng
+
+Original URL: https://net51.cc//mobile/hls/81579978.m3u8?q=720p&in=unknown::ni&lang=eng
+Final URL: https://net51.cc//mobile/hls/81579978.m3u8?q=720p&in=c50fb7ed04a9fea251e70a88e87cea57%3A%3A1767319335%3A%3Ani&lang=eng
+
+Original URL: https://net51.cc//mobile/hls/81579978.m3u8?q=480p&in=unknown::ni&lang=eng
+Final URL: https://net51.cc//mobile/hls/81579978.m3u8?q=480p&in=c50fb7ed04a9fea251e70a88e87cea57%3A%3A1767319335%3A%3Ani&lang=eng
+

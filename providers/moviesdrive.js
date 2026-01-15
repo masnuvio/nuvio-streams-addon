@@ -22,7 +22,7 @@ const CACHE_DIR = process.env.VERCEL ? path.join('/tmp', '.moviesdrive_cache') :
 const redisCache = new RedisCache('MoviesDrive');
 
 // Main URL for MoviesDrive
-let mainUrl = 'https://moviesdrive.pics';
+let mainUrl = 'https://moviesdrive.forum';
 
 // Cache helper functions
 const ensureCacheDir = async () => {
@@ -76,12 +76,15 @@ function makeRequest(url, callback, allowRedirects = true) {
         }
     };
 
+    console.log(`[MoviesDrive] Requesting: ${url}`);
+
     const req = protocol.request(options, (res) => {
         // Handle redirects
         if (allowRedirects && (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308)) {
             const redirectUrl = res.headers.location;
             if (redirectUrl) {
                 const fullRedirectUrl = redirectUrl.startsWith('http') ? redirectUrl : new URL(redirectUrl, url).href;
+                console.log(`[MoviesDrive] Redirecting to: ${fullRedirectUrl}`);
                 makeRequest(fullRedirectUrl, callback, allowRedirects);
                 return;
             }
@@ -97,6 +100,7 @@ function makeRequest(url, callback, allowRedirects = true) {
     });
 
     req.on('error', (err) => {
+        console.error(`[MoviesDrive] Request error for ${url}: ${err.message}`);
         callback(err, null, null);
     });
 
@@ -150,58 +154,59 @@ async function searchContent(query, callback) {
         const maxPages = 7;
 
         function searchPage(page) {
-            const searchUrl = `${mainUrl}/page/${page}/?s=${encodeURIComponent(query)}`;
+            // Use the search API instead of scraping HTML
+            const searchUrl = `${mainUrl}/searchapi.php?q=${encodeURIComponent(query)}&page=${page}`;
 
-            makeRequest(searchUrl, (err, html) => {
+            makeRequest(searchUrl, (err, data) => {
                 if (err) {
                     console.error(`Error searching page ${page}:`, err.message);
                     pagesChecked++;
                     if (pagesChecked === maxPages) {
-                        // Cache empty result to avoid repeated failed requests
                         saveToCache(cacheKey, searchResults);
                         callback(searchResults);
                     }
                     return;
                 }
 
-                const $ = cheerio.load(html);
-                const movieElements = $('ul.recent-movies > li');
+                console.log(`[MoviesDrive] Search API response length: ${data.length}`);
 
-                if (movieElements.length === 0) {
-                    // Cache the results (even if empty)
-                    saveToCache(cacheKey, searchResults);
-                    callback(searchResults);
-                    return;
-                }
+                try {
+                    const json = JSON.parse(data);
 
-                movieElements.each((index, element) => {
-                    const $element = $(element);
-                    const titleElement = $element.find('figure > img');
-                    const linkElement = $element.find('figure > a');
-                    const posterElement = $element.find('figure > img');
+                    if (!json.hits || json.hits.length === 0) {
+                        // No more results
+                        console.log(`[MoviesDrive] Caching ${searchResults.length} search results for: ${query}`);
+                        saveToCache(cacheKey, searchResults);
+                        callback(searchResults);
+                        return;
+                    }
 
-                    if (titleElement.length && linkElement.length) {
-                        const title = titleElement.attr('title');
-                        const href = linkElement.attr('href');
-                        const posterUrl = posterElement.attr('src') || '';
-
-                        if (title && href) {
+                    json.hits.forEach(hit => {
+                        const doc = hit.document;
+                        if (doc && doc.post_title && doc.permalink) {
+                            let url = doc.permalink;
+                            if (!url.startsWith('http')) {
+                                url = mainUrl + (url.startsWith('/') ? '' : '/') + url;
+                            }
                             searchResults.push({
-                                title: title.replace('Download ', ''),
-                                url: href,
-                                poster: posterUrl || ''
+                                title: doc.post_title.replace('Download ', ''),
+                                url: url,
+                                poster: doc.post_thumbnail || ''
                             });
                         }
-                    }
-                });
+                    });
 
-                pagesChecked++;
-                if (pagesChecked < maxPages && movieElements.length > 0) {
-                    searchPage(page + 1);
-                } else {
-                    // Cache the final results
-                    console.log(`[MoviesDrive] Caching ${searchResults.length} search results for: ${query}`);
-                    saveToCache(cacheKey, searchResults);
+                    pagesChecked++;
+                    if (pagesChecked < maxPages && json.hits.length > 0) {
+                        searchPage(page + 1);
+                    } else {
+                        console.log(`[MoviesDrive] Caching ${searchResults.length} search results for: ${query}`);
+                        saveToCache(cacheKey, searchResults);
+                        callback(searchResults);
+                    }
+                } catch (e) {
+                    console.error(`[MoviesDrive] Error parsing search API response: ${e.message}`);
+                    // If JSON parsing fails, maybe it's not JSON (e.g. error page), stop searching
                     callback(searchResults);
                 }
             });
@@ -1026,7 +1031,8 @@ async function getMoviesDriveStreams(tmdbId, mediaType, season = null, episode =
     }
 }
 
-module.exports = { 
+module.exports = {
     getMoviesDriveStreams,
-    getStreams: getMoviesDriveStreams
+    getStreams: getMoviesDriveStreams,
+    findStreamingLinks // Export for testing
 };
