@@ -45,8 +45,22 @@ async function getStreams(tmdbId, type, season, episode) {
             year = (type === 'movie' ? metaRes.data.release_date : metaRes.data.first_air_date)?.split('-')[0];
             console.log(`[XDMovies] Resolved Title: ${title} (${year})`);
         } catch (e) {
-            console.error(`[XDMovies] Failed to fetch TMDB metadata: ${e.message}`);
-            return [];
+            console.warn(`[XDMovies] Axios TMDB fetch failed: ${e.message}. Trying curl...`);
+            try {
+                const metaUrl = `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${tmdbKey}`;
+                const curlOutput = makeRequestWithCurl(metaUrl);
+                if (curlOutput) {
+                    const data = JSON.parse(curlOutput);
+                    title = type === 'movie' ? data.title : data.name;
+                    year = (type === 'movie' ? data.release_date : data.first_air_date)?.split('-')[0];
+                    console.log(`[XDMovies] Resolved Title (via curl): ${title} (${year})`);
+                } else {
+                    throw new Error("Curl returned empty response");
+                }
+            } catch (curlErr) {
+                console.error(`[XDMovies] Failed to fetch TMDB metadata: ${curlErr.message}`);
+                return [];
+            }
         }
 
         // 2. Search XDMovies
