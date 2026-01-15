@@ -1312,39 +1312,17 @@ builder.defineStreamHandler(async (args) => {
         const PROVIDER_TIMEOUT_MS = 15000; // 15 seconds
         const providerPromises = [
             timeProvider('ShowBox', providerFetchFunctions.showbox()),
-            timeProvider('Soaper TV', providerFetchFunctions.soapertv()),
-            timeProvider('VidSrc', providerFetchFunctions.vidsrc()),
-            timeProvider('VidZee', providerFetchFunctions.vidzee()),
-            timeProvider('MP4Hydra', providerFetchFunctions.mp4hydra()),
-            timeProvider('UHDMovies', providerFetchFunctions.uhdmovies()),
-            timeProvider('MoviesMod', providerFetchFunctions.moviesmod()),
             timeProvider('TopMovies', providerFetchFunctions.topmovies()),
-            timeProvider('MoviesDrive', providerFetchFunctions.moviesdrive()),
             timeProvider('4KHDHub', providerFetchFunctions['4khdhub']()),
-            timeProvider('Vixsrc', providerFetchFunctions.vixsrc()),
-            timeProvider('MovieBox', providerFetchFunctions.moviebox()),
-            timeProvider('AnimeKai', providerFetchFunctions.animekai()),
-            timeProvider('Cinevibe', providerFetchFunctions.cinevibe()),
-            timeProvider('DahmerMovies', providerFetchFunctions.dahmermovies()),
-            timeProvider('DVDPlay', providerFetchFunctions.dvdplay()),
             timeProvider('HDHub4u', providerFetchFunctions.hdhub4u()),
-            timeProvider('MalluMV', providerFetchFunctions.mallumv()),
-            timeProvider('Mapple', providerFetchFunctions.mapple()),
             timeProvider('StreamFlix', providerFetchFunctions.streamflix()),
             timeProvider('Videasy', providerFetchFunctions.videasy()),
             timeProvider('VidLink', providerFetchFunctions.vidlink()),
-            timeProvider('VidNestAnime', providerFetchFunctions['vidnest-anime']()),
-            timeProvider('VidNest', providerFetchFunctions.vidnest()),
-            timeProvider('VidRock', providerFetchFunctions.vidrock()),
-            timeProvider('Watch32', providerFetchFunctions.watch32()),
-            timeProvider('Xprime', providerFetchFunctions.xprime()),
-            timeProvider('Yflix', providerFetchFunctions.yflix()),
             timeProvider('NetMirror', providerFetchFunctions.netmirror()),
-            timeProvider('Castle', providerFetchFunctions.castle()),
-            timeProvider('VFlix', providerFetchFunctions.vflix())
+            timeProvider('Castle', providerFetchFunctions.castle())
         ];
 
-        // Implement proper timeout that returns results immediately after 10 seconds
+        // Implement proper timeout that returns results immediately after 15 seconds
         let providerResults;
         let timeoutOccurred = false;
 
@@ -1373,7 +1351,7 @@ builder.defineStreamHandler(async (args) => {
             ));
 
             providerResults = currentResults.map((result, index) => {
-                const providerNames = ['ShowBox', 'Soaper TV', 'VidSrc', 'VidZee', 'MP4Hydra', 'UHDMovies', 'MoviesMod', 'TopMovies', 'MoviesDrive', '4KHDHub', 'Vixsrc', 'MovieBox', 'AnimeKai', 'Cinevibe', 'DahmerMovies', 'DVDPlay', 'HDHub4u', 'MalluMV', 'Mapple', 'StreamFlix', 'Videasy', 'VidLink', 'VidNestAnime', 'VidNest', 'VidRock', 'Watch32', 'Xprime', 'Yflix', 'NetMirror', 'Castle', 'VFlix'];
+                const providerNames = ['ShowBox', 'TopMovies', '4KHDHub', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink', 'NetMirror', 'Castle'];
                 if (result.status === 'fulfilled' && Array.isArray(result.value) && result.value.length > 0) {
                     console.log(`[Timeout] Provider ${providerNames[index]} completed with ${result.value.length} streams.`);
                     return result.value;
@@ -1396,36 +1374,14 @@ builder.defineStreamHandler(async (args) => {
         // Process results into streamsByProvider object
         const streamsByProvider = {
             'ShowBox': shouldFetch('showbox') ? applyAllStreamFilters(providerResults[0], 'ShowBox', minQualitiesPreferences.showbox, excludeCodecsPreferences.showbox) : [],
-            'Soaper TV': ENABLE_SOAPERTV_PROVIDER && shouldFetch('soapertv') ? applyAllStreamFilters(providerResults[1], 'Soaper TV', minQualitiesPreferences.soapertv, excludeCodecsPreferences.soapertv) : [],
-            'VidSrc': ENABLE_VIDSRC_PROVIDER && shouldFetch('vidsrc') ? applyAllStreamFilters(providerResults[2], 'VidSrc', minQualitiesPreferences.vidsrc, excludeCodecsPreferences.vidsrc) : [],
-            'VidZee': ENABLE_VIDZEE_PROVIDER && shouldFetch('vidzee') ? applyAllStreamFilters(providerResults[3], 'VidZee', minQualitiesPreferences.vidzee, excludeCodecsPreferences.vidzee) : [],
-            'MP4Hydra': ENABLE_MP4HYDRA_PROVIDER && shouldFetch('mp4hydra') ? applyAllStreamFilters(providerResults[4], 'MP4Hydra', minQualitiesPreferences.mp4hydra, excludeCodecsPreferences.mp4hydra) : [],
-            'UHDMovies': ENABLE_UHDMOVIES_PROVIDER && shouldFetch('uhdmovies') ? applyAllStreamFilters(providerResults[5], 'UHDMovies', minQualitiesPreferences.uhdmovies, excludeCodecsPreferences.uhdmovies) : [],
-            'MoviesMod': ENABLE_MOVIESMOD_PROVIDER && shouldFetch('moviesmod') ? applyAllStreamFilters(providerResults[6], 'MoviesMod', minQualitiesPreferences.moviesmod, excludeCodecsPreferences.moviesmod) : [],
-            'TopMovies': ENABLE_TOPMOVIES_PROVIDER && shouldFetch('topmovies') ? applyAllStreamFilters(providerResults[7], 'TopMovies', minQualitiesPreferences.topmovies, excludeCodecsPreferences.topmovies) : [],
-            'MoviesDrive': ENABLE_MOVIESDRIVE_PROVIDER && shouldFetch('moviesdrive') ? applyAllStreamFilters(providerResults[8], 'MoviesDrive', minQualitiesPreferences.moviesdrive, excludeCodecsPreferences.moviesdrive) : [],
-            '4KHDHub': ENABLE_4KHDHUB_PROVIDER && shouldFetch('4khdhub') ? applyAllStreamFilters(providerResults[9], '4KHDHub', minQualitiesPreferences['4khdhub'], excludeCodecsPreferences['4khdhub']) : [],
-            'Vixsrc': ENABLE_VIXSRC_PROVIDER && shouldFetch('vixsrc') ? applyAllStreamFilters(providerResults[10], 'Vixsrc', minQualitiesPreferences.vixsrc, excludeCodecsPreferences.vixsrc) : [],
-            'MovieBox': ENABLE_MOVIEBOX_PROVIDER && shouldFetch('moviebox') ? applyAllStreamFilters(providerResults[11], 'MovieBox', minQualitiesPreferences.moviebox, excludeCodecsPreferences.moviebox) : [],
-            'AnimeKai': ENABLE_ANIMEKAI_PROVIDER && shouldFetch('animekai') ? applyAllStreamFilters(providerResults[12], 'AnimeKai', minQualitiesPreferences.animekai, excludeCodecsPreferences.animekai) : [],
-            'Cinevibe': ENABLE_CINEVIBE_PROVIDER && shouldFetch('cinevibe') ? applyAllStreamFilters(providerResults[13], 'Cinevibe', minQualitiesPreferences.cinevibe, excludeCodecsPreferences.cinevibe) : [],
-            'DahmerMovies': ENABLE_DAHMERMOVIES_PROVIDER && shouldFetch('dahmermovies') ? applyAllStreamFilters(providerResults[14], 'DahmerMovies', minQualitiesPreferences.dahmermovies, excludeCodecsPreferences.dahmermovies) : [],
-            'DVDPlay': ENABLE_DVDPLAY_PROVIDER && shouldFetch('dvdplay') ? applyAllStreamFilters(providerResults[15], 'DVDPlay', minQualitiesPreferences.dvdplay, excludeCodecsPreferences.dvdplay) : [],
-            'HDHub4u': ENABLE_HDHUB4U_PROVIDER && shouldFetch('hdhub4u') ? applyAllStreamFilters(providerResults[16], 'HDHub4u', minQualitiesPreferences.hdhub4u, excludeCodecsPreferences.hdhub4u) : [],
-            'MalluMV': ENABLE_MALLUMV_PROVIDER && shouldFetch('mallumv') ? applyAllStreamFilters(providerResults[17], 'MalluMV', minQualitiesPreferences.mallumv, excludeCodecsPreferences.mallumv) : [],
-            'Mapple': ENABLE_MAPPLE_PROVIDER && shouldFetch('mapple') ? applyAllStreamFilters(providerResults[18], 'Mapple', minQualitiesPreferences.mapple, excludeCodecsPreferences.mapple) : [],
-            'StreamFlix': ENABLE_STREAMFLIX_PROVIDER && shouldFetch('streamflix') ? applyAllStreamFilters(providerResults[19], 'StreamFlix', minQualitiesPreferences.streamflix, excludeCodecsPreferences.streamflix) : [],
-            'Videasy': ENABLE_VIDEASY_PROVIDER && shouldFetch('videasy') ? applyAllStreamFilters(providerResults[20], 'Videasy', minQualitiesPreferences.videasy, excludeCodecsPreferences.videasy) : [],
-            'VidLink': ENABLE_VIDLINK_PROVIDER && shouldFetch('vidlink') ? applyAllStreamFilters(providerResults[21], 'VidLink', minQualitiesPreferences.vidlink, excludeCodecsPreferences.vidlink) : [],
-            'VidNestAnime': ENABLE_VIDNEST_ANIME_PROVIDER && shouldFetch('vidnest-anime') ? applyAllStreamFilters(providerResults[22], 'VidNestAnime', minQualitiesPreferences['vidnest-anime'], excludeCodecsPreferences['vidnest-anime']) : [],
-            'VidNest': ENABLE_VIDNEST_PROVIDER && shouldFetch('vidnest') ? applyAllStreamFilters(providerResults[23], 'VidNest', minQualitiesPreferences.vidnest, excludeCodecsPreferences.vidnest) : [],
-            'VidRock': ENABLE_VIDROCK_PROVIDER && shouldFetch('vidrock') ? applyAllStreamFilters(providerResults[24], 'VidRock', minQualitiesPreferences.vidrock, excludeCodecsPreferences.vidrock) : [],
-            'Watch32': ENABLE_WATCH32_PROVIDER && shouldFetch('watch32') ? applyAllStreamFilters(providerResults[25], 'Watch32', minQualitiesPreferences.watch32, excludeCodecsPreferences.watch32) : [],
-            'Xprime': ENABLE_XPRIME_PROVIDER && shouldFetch('xprime') ? applyAllStreamFilters(providerResults[26], 'Xprime', minQualitiesPreferences.xprime, excludeCodecsPreferences.xprime) : [],
-            'Yflix': ENABLE_YFLIX_PROVIDER && shouldFetch('yflix') ? applyAllStreamFilters(providerResults[27], 'Yflix', minQualitiesPreferences.yflix, excludeCodecsPreferences.yflix) : [],
-            'NetMirror': ENABLE_NETMIRROR_PROVIDER && shouldFetch('netmirror') ? applyAllStreamFilters(providerResults[28], 'NetMirror', minQualitiesPreferences.netmirror, excludeCodecsPreferences.netmirror) : [],
-            'Castle': ENABLE_CASTLE_PROVIDER && shouldFetch('castle') ? applyAllStreamFilters(providerResults[29], 'Castle', minQualitiesPreferences.castle, excludeCodecsPreferences.castle) : [],
-            'VFlix': ENABLE_VFLIX_PROVIDER && shouldFetch('vflix') ? applyAllStreamFilters(providerResults[30], 'VFlix', minQualitiesPreferences.vflix, excludeCodecsPreferences.vflix) : []
+            'TopMovies': ENABLE_TOPMOVIES_PROVIDER && shouldFetch('topmovies') ? applyAllStreamFilters(providerResults[1], 'TopMovies', minQualitiesPreferences.topmovies, excludeCodecsPreferences.topmovies) : [],
+            '4KHDHub': ENABLE_4KHDHUB_PROVIDER && shouldFetch('4khdhub') ? applyAllStreamFilters(providerResults[2], '4KHDHub', minQualitiesPreferences['4khdhub'], excludeCodecsPreferences['4khdhub']) : [],
+            'HDHub4u': ENABLE_HDHUB4U_PROVIDER && shouldFetch('hdhub4u') ? applyAllStreamFilters(providerResults[3], 'HDHub4u', minQualitiesPreferences.hdhub4u, excludeCodecsPreferences.hdhub4u) : [],
+            'StreamFlix': ENABLE_STREAMFLIX_PROVIDER && shouldFetch('streamflix') ? applyAllStreamFilters(providerResults[4], 'StreamFlix', minQualitiesPreferences.streamflix, excludeCodecsPreferences.streamflix) : [],
+            'Videasy': ENABLE_VIDEASY_PROVIDER && shouldFetch('videasy') ? applyAllStreamFilters(providerResults[5], 'Videasy', minQualitiesPreferences.videasy, excludeCodecsPreferences.videasy) : [],
+            'VidLink': ENABLE_VIDLINK_PROVIDER && shouldFetch('vidlink') ? applyAllStreamFilters(providerResults[6], 'VidLink', minQualitiesPreferences.vidlink, excludeCodecsPreferences.vidlink) : [],
+            'NetMirror': ENABLE_NETMIRROR_PROVIDER && shouldFetch('netmirror') ? applyAllStreamFilters(providerResults[7], 'NetMirror', minQualitiesPreferences.netmirror, excludeCodecsPreferences.netmirror) : [],
+            'Castle': ENABLE_CASTLE_PROVIDER && shouldFetch('castle') ? applyAllStreamFilters(providerResults[8], 'Castle', minQualitiesPreferences.castle, excludeCodecsPreferences.castle) : []
         };
 
         // Sort streams for each provider by quality, then size
