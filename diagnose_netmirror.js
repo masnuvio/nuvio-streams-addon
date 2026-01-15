@@ -10,12 +10,11 @@ async function runDiagnosis() {
     // 1. Check file content
     if (fs.existsSync(NETMIRROR_FILE)) {
         const content = fs.readFileSync(NETMIRROR_FILE, 'utf8');
-        if (content.includes('/tv/playlist.php')) {
-            console.log("✓ Code Check: providers/netmirror.js contains '/tv/playlist.php' (UPDATED)");
+        if (content.includes("fullUrl.replace('::ti', '::ni')")) {
+            console.log("✓ Code Check: providers/netmirror.js contains replacement logic (UPDATED)");
         } else {
-            console.log("✗ Code Check: providers/netmirror.js DOES NOT contain '/tv/playlist.php' (OUTDATED)");
-            console.log("   -> Please run 'git pull origin main' and restart.");
-            return;
+            console.log("✗ Code Check: providers/netmirror.js MISSING replacement logic (OUTDATED)");
+            console.log("   -> Please run 'git pull origin main' again.");
         }
     } else {
         console.log("✗ Code Check: providers/netmirror.js not found!");
