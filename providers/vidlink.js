@@ -6,14 +6,14 @@
 const axios = require('axios');
 const { execSync } = require('child_process');
 
-// Helper to use curl.exe for the encryption API as a fallback for ECONNRESET
+// Helper to use curl for the encryption API as a fallback for ECONNRESET
 function makeRequestWithCurl(url) {
     try {
-        console.log(`[Vidlink] Using curl.exe for: ${url}`);
-        const output = execSync(`curl.exe -s "${url}"`, { encoding: 'utf8' });
+        console.log(`[VidLink] Using curl for: ${url}`);
+        const output = execSync(`curl -s "${url}"`, { encoding: 'utf8' });
         return JSON.parse(output);
     } catch (error) {
-        console.error(`[Vidlink] curl.exe failed: ${error.message}`);
+        console.error(`[Vidlink] curl failed: ${error.message}`);
         throw error;
     }
 }

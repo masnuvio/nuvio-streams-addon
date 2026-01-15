@@ -12,12 +12,12 @@ const HEADERS = {
 // Helper to use curl.exe for the encryption API as a fallback for ECONNRESET
 function makeRequestWithCurl(url, body) {
   try {
-    console.log(`[VideoEasy] Using curl.exe for: ${url}`);
+    console.log(`[VideoEasy] Using curl for: ${url}`);
     const bodyStr = JSON.stringify(body).replace(/"/g, '\\"');
-    const output = execSync(`curl.exe -s -X POST -H "Content-Type: application/json" -d "${bodyStr}" "${url}"`, { encoding: 'utf8' });
+    const output = execSync(`curl -s -X POST -H "Content-Type: application/json" -d "${bodyStr}" "${url}"`, { encoding: 'utf8' });
     return JSON.parse(output);
   } catch (error) {
-    console.error(`[VideoEasy] curl.exe failed: ${error.message}`);
+    console.error(`[VideoEasy] curl failed: ${error.message}`);
     throw error;
   }
 }
@@ -167,11 +167,11 @@ function decryptVideoEasy(encryptedText, tmdbId) {
   return postJson(url, body)
     .then((response) => response.result)
     .catch((error) => {
-      if (error.message.includes('ECONNRESET') || error.message.includes('socket hang up')) {
-        console.warn(`[VideoEasy] Axios failed with ECONNRESET, trying curl.exe fallback...`);
+      if (error.message.includes('ECONNRESET') || error.message.includes('socket hang up') || error.message.includes('fetch failed')) {
+        console.warn(`[VideoEasy] Axios failed with ECONNRESET, trying curl fallback...`);
         const data = makeRequestWithCurl(url, body);
         if (data && data.result) {
-          console.log(`[VideoEasy] Successfully decrypted using curl.exe`);
+          console.log(`[VideoEasy] Successfully decrypted using curl`);
           return data.result;
         }
       }
@@ -564,7 +564,7 @@ function formatStreamsForNuvio(mediaData, serverName, serverConfig, mediaDetails
 
       streams.push({
         name: `VIDEASY ${serverName} (${serverConfig.language})${languageInfo} - ${quality}`,
-        title: `${mediaDetails.title} (${mediaDetails.year}) - ${serverName} ${quality}`,
+        title: title,
         url: source.url,
         quality: quality,
         size: 'Unknown',
@@ -685,8 +685,20 @@ function getStreams(tmdbId, mediaType, seasonNum, episodeNum) {
               return qualityB - qualityA;
             });
 
-            console.log(`[VideoEasy] Total streams found: ${uniqueStreams.length}`);
-            resolve(uniqueStreams);
+            // FILTER FOR 1080p ONLY (REQUESTED FIX)
+            console.log(`[VideoEasy] Total streams before filtering: ${uniqueStreams.length}`);
+            const filteredStreams = uniqueStreams.filter(stream => {
+              if (mediaType === 'movie') {
+                return stream.quality === '1080p';
+              }
+              return true;
+            });
+
+            console.log(`[VideoEasy] Total streams found: ${filteredStreams.length} (Filtered for 1080p)`);
+            if (uniqueStreams.length > 0 && filteredStreams.length === 0) {
+              console.log(`[VideoEasy] WARNING: All ${uniqueStreams.length} streams were filtered out! Qualities found: ${uniqueStreams.map(s => s.quality).join(', ')}`);
+            }
+            resolve(filteredStreams);
           });
       })
       .catch((error) => {
