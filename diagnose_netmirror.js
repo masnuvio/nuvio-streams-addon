@@ -27,7 +27,7 @@ async function runDiagnosis() {
         const { getStreams } = require('./providers/netmirror.js');
         console.log("\nRunning getStreams for 'Stranger Things'...");
 
-        const streams = await getStreams("81406419", "tv", 1, 1); // Stranger Things ID
+        const streams = await getStreams("66732", "tv", 1, 1); // Stranger Things TMDB ID
 
         if (streams && streams.length > 0) {
             const firstLink = streams[0].url;
