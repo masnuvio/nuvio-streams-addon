@@ -148,11 +148,13 @@ const ENABLE_HDHUB4U_PROVIDER = process.env.ENABLE_HDHUB4U_PROVIDER !== 'false';
 const ENABLE_STREAMFLIX_PROVIDER = process.env.ENABLE_STREAMFLIX_PROVIDER !== 'false';
 const ENABLE_VIDEASY_PROVIDER = process.env.ENABLE_VIDEASY_PROVIDER !== 'false';
 const ENABLE_VIDLINK_PROVIDER = process.env.ENABLE_VIDLINK_PROVIDER !== 'false';
+const ENABLE_XDMOVIES_PROVIDER = process.env.ENABLE_XDMOVIES_PROVIDER !== 'false';
 
 const { getStreams: getHDHub4uStreams } = require('./providers/hdhub4u.js');
 const { getStreams: getStreamFlixStreams } = require('./providers/streamflix.js');
 const { getStreams: getVideasyStreams } = require('./providers/videasy.js');
 const { getStreams: getVidLinkStreams } = require('./providers/vidlink.js');
+const { getStreams: getXDMoviesStreams } = require('./providers/xdmovies.js');
 
 // NEW: Read environment variable for NetMirror
 const ENABLE_NETMIRROR_PROVIDER = process.env.ENABLE_NETMIRROR_PROVIDER !== 'false';
@@ -1301,6 +1303,24 @@ builder.defineStreamHandler(async (args) => {
                 console.error(`[Castle] Error:`, err.message);
                 return [];
             }
+        },
+
+        // XDMovies provider
+        xdmovies: async () => {
+            if (!ENABLE_XDMOVIES_PROVIDER) return [];
+            if (!shouldFetch('xdmovies')) return [];
+            try {
+                const cached = await getStreamFromCache('xdmovies', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'XDMovies' }));
+
+                console.log(`[XDMovies] Fetching new streams...`);
+                const streams = await getXDMoviesStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('xdmovies', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'XDMovies' }));
+            } catch (err) {
+                console.error(`[XDMovies] Error:`, err.message);
+                return [];
+            }
         }
     };
 
@@ -1319,7 +1339,8 @@ builder.defineStreamHandler(async (args) => {
             timeProvider('Videasy', providerFetchFunctions.videasy()),
             timeProvider('VidLink', providerFetchFunctions.vidlink()),
             timeProvider('NetMirror', providerFetchFunctions.netmirror()),
-            timeProvider('Castle', providerFetchFunctions.castle())
+            timeProvider('Castle', providerFetchFunctions.castle()),
+            timeProvider('XDMovies', providerFetchFunctions.xdmovies())
         ];
 
         // Implement proper timeout that returns results immediately after 15 seconds
@@ -1351,7 +1372,7 @@ builder.defineStreamHandler(async (args) => {
             ));
 
             providerResults = currentResults.map((result, index) => {
-                const providerNames = ['ShowBox', 'TopMovies', '4KHDHub', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink', 'NetMirror', 'Castle'];
+                const providerNames = ['ShowBox', 'TopMovies', '4KHDHub', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink', 'NetMirror', 'Castle', 'XDMovies'];
                 if (result.status === 'fulfilled' && Array.isArray(result.value) && result.value.length > 0) {
                     console.log(`[Timeout] Provider ${providerNames[index]} completed with ${result.value.length} streams.`);
                     return result.value;
@@ -1381,7 +1402,8 @@ builder.defineStreamHandler(async (args) => {
             'Videasy': ENABLE_VIDEASY_PROVIDER && shouldFetch('videasy') ? applyAllStreamFilters(providerResults[5], 'Videasy', minQualitiesPreferences.videasy, excludeCodecsPreferences.videasy) : [],
             'VidLink': ENABLE_VIDLINK_PROVIDER && shouldFetch('vidlink') ? applyAllStreamFilters(providerResults[6], 'VidLink', minQualitiesPreferences.vidlink, excludeCodecsPreferences.vidlink) : [],
             'NetMirror': ENABLE_NETMIRROR_PROVIDER && shouldFetch('netmirror') ? applyAllStreamFilters(providerResults[7], 'NetMirror', minQualitiesPreferences.netmirror, excludeCodecsPreferences.netmirror) : [],
-            'Castle': ENABLE_CASTLE_PROVIDER && shouldFetch('castle') ? applyAllStreamFilters(providerResults[8], 'Castle', minQualitiesPreferences.castle, excludeCodecsPreferences.castle) : []
+            'Castle': ENABLE_CASTLE_PROVIDER && shouldFetch('castle') ? applyAllStreamFilters(providerResults[8], 'Castle', minQualitiesPreferences.castle, excludeCodecsPreferences.castle) : [],
+            'XDMovies': ENABLE_XDMOVIES_PROVIDER && shouldFetch('xdmovies') ? applyAllStreamFilters(providerResults[9], 'XDMovies', minQualitiesPreferences.xdmovies, excludeCodecsPreferences.xdmovies) : []
         };
 
         // Sort streams for each provider by quality, then size
