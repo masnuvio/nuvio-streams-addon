@@ -523,7 +523,7 @@ function getStreams(tmdbId, mediaType = "movie", seasonNum = null, episodeNum = 
                                     "Origin": isNfOrPv ? "https://net51.cc" : "https://net51.cc",
                                     "Referer": isNfOrPv ? "https://net51.cc/" : "https://net51.cc/tv/home",
                                     "Cookie": "hd=on",
-                                    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/138.0.7204.156 Mobile/15E148 Safari/604.1"
+                                    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/119.0.6045.109 Mobile/15E148 Safari/604.1"
                                 };
                                 return {
                                     name: `NetMirror (${platform.charAt(0).toUpperCase() + platform.slice(1)})`,
