@@ -2,10 +2,25 @@
 // React Native compatible version - Promise-based (no async/await)
 // Extracts streaming links using TMDB ID for all VideoEasy servers
 
+const { execSync } = require('child_process');
+
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
   'Connection': 'keep-alive'
 };
+
+// Helper to use curl.exe for the encryption API as a fallback for ECONNRESET
+function makeRequestWithCurl(url, body) {
+  try {
+    console.log(`[VideoEasy] Using curl.exe for: ${url}`);
+    const bodyStr = JSON.stringify(body).replace(/"/g, '\\"');
+    const output = execSync(`curl.exe -s -X POST -H "Content-Type: application/json" -d "${bodyStr}" "${url}"`, { encoding: 'utf8' });
+    return JSON.parse(output);
+  } catch (error) {
+    console.error(`[VideoEasy] curl.exe failed: ${error.message}`);
+    throw error;
+  }
+}
 
 // VideoEasy API configuration
 const API = 'https://enc-dec.app/api';
@@ -146,8 +161,22 @@ function postJson(url, jsonBody, extraHeaders) {
 
 // Decrypt VideoEasy data
 function decryptVideoEasy(encryptedText, tmdbId) {
-  return postJson(`${API}/dec-videasy`, { text: encryptedText, id: tmdbId })
-    .then((response) => response.result);
+  const url = `${API}/dec-videasy`;
+  const body = { text: encryptedText, id: tmdbId };
+
+  return postJson(url, body)
+    .then((response) => response.result)
+    .catch((error) => {
+      if (error.message.includes('ECONNRESET') || error.message.includes('socket hang up')) {
+        console.warn(`[VideoEasy] Axios failed with ECONNRESET, trying curl.exe fallback...`);
+        const data = makeRequestWithCurl(url, body);
+        if (data && data.result) {
+          console.log(`[VideoEasy] Successfully decrypted using curl.exe`);
+          return data.result;
+        }
+      }
+      throw error;
+    });
 }
 
 // Fetch movie details from TMDB

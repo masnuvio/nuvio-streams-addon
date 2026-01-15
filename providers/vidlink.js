@@ -4,6 +4,19 @@
  */
 
 const axios = require('axios');
+const { execSync } = require('child_process');
+
+// Helper to use curl.exe for the encryption API as a fallback for ECONNRESET
+function makeRequestWithCurl(url) {
+    try {
+        console.log(`[Vidlink] Using curl.exe for: ${url}`);
+        const output = execSync(`curl.exe -s "${url}"`, { encoding: 'utf8' });
+        return JSON.parse(output);
+    } catch (error) {
+        console.error(`[Vidlink] curl.exe failed: ${error.message}`);
+        throw error;
+    }
+}
 
 // Constants
 const TMDB_API_KEY = process.env.TMDB_API_KEY || "68e094699525b18a70bab2f86b1fa706";
@@ -75,14 +88,27 @@ async function getTmdbInfo(tmdbId, mediaType) {
 // Encrypt TMDB ID helper
 async function encryptTmdbId(tmdbId) {
     console.log(`[Vidlink] Encrypting TMDB ID: ${tmdbId}`);
-    const response = await makeRequest(`${ENC_DEC_API}/enc-vidlink?text=${tmdbId}`);
-    const data = response.data;
-    if (data && data.result) {
-        console.log(`[Vidlink] Successfully encrypted TMDB ID`);
-        return data.result;
-    } else {
-        throw new Error("Invalid encryption response format");
+    const url = `${ENC_DEC_API}/enc-vidlink?text=${tmdbId}`;
+
+    try {
+        const response = await makeRequest(url);
+        const data = response.data;
+        if (data && data.result) {
+            console.log(`[Vidlink] Successfully encrypted TMDB ID`);
+            return data.result;
+        }
+    } catch (error) {
+        if (error.message.includes('ECONNRESET') || error.message.includes('socket hang up')) {
+            console.warn(`[Vidlink] Axios failed with ECONNRESET, trying curl.exe fallback...`);
+            const data = makeRequestWithCurl(url);
+            if (data && data.result) {
+                console.log(`[Vidlink] Successfully encrypted TMDB ID using curl.exe`);
+                return data.result;
+            }
+        }
+        throw error;
     }
+    throw new Error("Invalid encryption response format");
 }
 
 // URL Resolver
@@ -294,8 +320,18 @@ async function getVidLinkStreams(tmdbId, mediaType = "movie", seasonNum = null, 
         }
 
         console.log(`[Vidlink] Requesting: ${vidlinkUrl}`);
-        const response = await makeRequest(vidlinkUrl, { headers: VIDLINK_HEADERS });
-        const data = response.data;
+        let data;
+        try {
+            const response = await makeRequest(vidlinkUrl, { headers: VIDLINK_HEADERS });
+            data = response.data;
+        } catch (error) {
+            if (error.message.includes('ECONNRESET') || error.message.includes('socket hang up')) {
+                console.warn(`[Vidlink] Main API failed with ECONNRESET, trying curl.exe fallback...`);
+                data = makeRequestWithCurl(vidlinkUrl);
+            } else {
+                throw error;
+            }
+        }
 
         const mediaInfo = { title, year, mediaType, season: seasonNum, episode: episodeNum };
         const streams = processVidlinkResponse(data, mediaInfo);

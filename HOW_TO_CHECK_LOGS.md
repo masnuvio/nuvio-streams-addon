@@ -1,47 +1,42 @@
-# How to Check Server Logs
+# How to Check Logs
 
-## Method 1: View Running Terminal
-The easiest way is to **look at the terminal window where you ran `npm start`**. The server outputs logs in real-time there.
+Depending on how you are running the addon, use one of the following methods to view the logs.
 
-## Method 2: Test Stream Endpoint
-Open a **new PowerShell window** and run:
+## Option 1: Running with Docker (Recommended)
+If you deployed using Docker, run this command in your terminal:
 
-```powershell
-# Test Fight Club (TMDB ID: 550)
-Invoke-WebRequest -Uri "http://localhost:7000/stream/movie/tmdb:550.json" -UseBasicParsing | Select-Object -ExpandProperty Content
+```bash
+docker logs -f nuvio-addon
+```
+*(Replace `nuvio-addon` with your actual container name if it's different. You can find it with `docker ps`)*
+
+## Option 2: Running with PM2
+If you are using PM2 to keep the addon running:
+
+```bash
+pm2 logs
+```
+Or for a specific process:
+```bash
+pm2 logs addon
 ```
 
-Then **check the npm start terminal** - you should see logs like:
-- `Stream request for Stremio type: 'movie', id: 'tmdb:550'`
-- `[StreamFlix] Fetching streams for: Fight Club`
-- `[VidZee] Searching for: Fight Club`
+## Option 3: Running Manually (Node.js)
+If you are running it directly in the terminal:
 
-## Method 3: Check What You Should See
-
-**Good logs (providers working):**
+1. Stop the current process (Ctrl+C).
+2. Run it again and redirect output to a file:
+```bash
+node addon.js > debug_log.txt 2>&1
 ```
-[StreamFlix] Successfully fetched 4 streams
-[VidZee] Found 3 streams
-[DahmerMovies] Extracted 2 streams
-```
-
-**Bad logs (providers not working):**
-```
-[StreamFlix] No streams returned
-[VidZee] Skipping fetch: Not selected by user
-[Provider] Error fetching streams: ...
-```
+3. Let it run for a minute and try to play a stream.
+4. Open `debug_log.txt` to see the logs.
 
 ## What to Look For
+Search the logs for lines containing:
+- `[Vidlink]`
+- `[NetMirror]`
+- `ECONNRESET`
+- `Error`
 
-1. **Are providers being called?** Look for `[ProviderName] Fetching...` messages
-2. **Are streams being found?** Look for `Successfully fetched X streams` messages
-3. **Any errors?** Look for `Error:` or `failed` messages
-
-## Current Status
-
-Your server is running on **http://localhost:7000**
-
-**Manifest URL:** `http://localhost:7000/manifest.json`
-
-Try the test command above and **tell me what you see in the npm start terminal!**
+Please copy and paste the relevant error sections or the whole log file if it's not too large.
