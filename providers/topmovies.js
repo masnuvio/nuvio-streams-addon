@@ -19,11 +19,15 @@ const getAxiosCookieJarSupport = async () => {
 };
 
 // --- Domain Fetching ---
-let topMoviesDomain = 'https://moviesleech.eu'; // Fallback domain
+let topMoviesDomain = 'https://moviesleech.zip'; // Updated fallback domain
 let domainCacheTimestamp = 0;
 const DOMAIN_CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
 
 async function getTopMoviesDomain() {
+    // For now, prioritize the verified working domain
+    return topMoviesDomain;
+
+    /*
     const now = Date.now();
     if (now - domainCacheTimestamp < DOMAIN_CACHE_TTL) {
         return topMoviesDomain;
@@ -43,6 +47,7 @@ async function getTopMoviesDomain() {
         console.error(`[TopMovies] Failed to fetch latest domain, using fallback. Error: ${error.message}`);
     }
     return topMoviesDomain;
+    */
 }
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY || "439c478a771f35c05022f9feabcca01c"; // Fallback to a public key
@@ -54,18 +59,6 @@ if (TOPMOVIES_PROXY_URL) {
 } else {
     console.log('[TopMovies] No proxy configured');
 }
-
-// Proxy wrapper function
-const makeRequest = (url, options = {}) => {
-    if (TOPMOVIES_PROXY_URL) {
-        const proxiedUrl = `${TOPMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
-        console.log(`[TopMovies] Making proxied request to: ${url}`);
-        return axios.get(proxiedUrl, options);
-    } else {
-        console.log(`[TopMovies] Making direct request to: ${url}`);
-        return axios.get(url, options);
-    }
-};
 
 // --- Scraper Functions ---
 
@@ -81,6 +74,18 @@ const axiosInstance = axios.create({
     },
     timeout: 45000
 });
+
+// Proxy wrapper function
+const makeRequest = (url, options = {}) => {
+    if (TOPMOVIES_PROXY_URL) {
+        const proxiedUrl = `${TOPMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
+        console.log(`[TopMovies] Making proxied request to: ${url}`);
+        return axiosInstance.get(proxiedUrl, options);
+    } else {
+        console.log(`[TopMovies] Making direct request to: ${url}`);
+        return axiosInstance.get(url, options);
+    }
+};
 
 // Search function for topmovies.rodeo
 async function searchMovies(query) {
@@ -707,7 +712,6 @@ async function getTopMoviesStreams(tmdbId, mediaType = 'movie', season = null, e
             } else {
                 console.log(`[TopMovies Cache] MISS for key: ${cacheKey}. Fetching from source.`);
             }
-            console.log(`[TopMovies Cache] MISS for key: ${cacheKey}. Fetching from source.`);
             // 2. Get TMDB info
             const tmdbUrl = `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${TMDB_API_KEY}`;
             const tmdbResponse = await axios.get(tmdbUrl);
@@ -800,62 +804,34 @@ async function getTopMoviesStreams(tmdbId, mediaType = 'movie', season = null, e
                     log: console
                 });
 
-                if (!finalDownloadUrl) {
-                    console.log('[TopMovies] ✗ Could not extract final link for', cachedLink.quality);
-                    return null;
+                if (finalDownloadUrl) {
+                    return {
+                        name: `TopMovies - ${cachedLink.quality}`,
+                        title: cachedLink.title || 'Movie',
+                        url: finalDownloadUrl,
+                        quality: cachedLink.quality,
+                        size: 'Unknown',
+                        type: 'direct',
+                        provider: 'TopMovies'
+                    };
                 }
-
-                const cleanQualityMatch = (cachedLink.quality || '').match(/(\d{3,4}p|4K)/i);
-                const cleanQuality = cleanQualityMatch ? cleanQualityMatch[0] : (cachedLink.quality || 'UNK');
-
-                // Extract size and title for display (best-effort)
-                let sizeInfo = 'Unknown';
-                let movieTitle = null;
-                const sizeElement = $('li.list-group-item:contains("Size :")').text();
-                if (sizeElement) {
-                    const sizeMatch = sizeElement.match(/Size\s*:\s*([0-9.,]+\s*[KMGT]B)/);
-                    if (sizeMatch) {
-                        sizeInfo = sizeMatch[1];
-                    }
-                }
-                const nameElement = $('li.list-group-item:contains("Name :")');
-                if (nameElement.length > 0) {
-                    movieTitle = nameElement.text().replace('Name :', '').trim();
-                } else {
-                    const h5Title = $('div.card-header h5').clone().children().remove().end().text().trim();
-                    if (h5Title) {
-                        movieTitle = h5Title.replace(/\[.*\]/, '').trim();
-                    }
-                }
-
-                return {
-                    name: `TopMovies - ${cleanQuality}`,
-                    title: `${movieTitle || 'Unknown Title'}\n${sizeInfo}`,
-                    url: finalDownloadUrl,
-                    quality: cachedLink.quality,
-                    size: sizeInfo,
-                    behaviorHints: { bingeGroup: `topmovies-${cleanQuality}` }
-                };
             } catch (error) {
-                console.error(`[TopMovies] Error processing cached link ${cachedLink.quality}: ${error.message}`);
-                return null;
+                console.error(`[TopMovies] Error processing redirect for ${cachedLink.quality}: ${error.message}`);
             }
+            return null;
         });
 
         const streams = (await Promise.all(streamPromises)).filter(Boolean);
-        console.log(`[TopMovies] Successfully processed ${streams.length} final stream links.`);
-
+        console.log(`[TopMovies] Successfully found ${streams.length} streams.`);
         return streams;
 
     } catch (error) {
-        console.error(`[TopMovies] A critical error occurred for TMDB ID ${tmdbId}: ${error.message}`);
-        // For more detailed debugging, uncomment the line below
-        // if (error.stack) console.error(error.stack);
+        console.error(`[TopMovies] Error in getTopMoviesStreams: ${error.message}`);
         return [];
     }
 }
 
-module.exports = { 
+module.exports = {
     getTopMoviesStreams,
     getStreams: getTopMoviesStreams
 };

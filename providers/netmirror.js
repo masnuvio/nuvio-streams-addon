@@ -25,6 +25,21 @@ let globalCookie = '';
 let cookieTimestamp = 0;
 const COOKIE_EXPIRY = 54000000; // 15 hours in milliseconds
 
+// Axios with retry helper for NetMirror
+async function axiosWithRetry(config, retries = 3, backoff = 1000) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await axios(config);
+        } catch (err) {
+            const isRetryable = err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT' || (err.response && err.response.status >= 500);
+            if (i === retries - 1 || !isRetryable) throw err;
+            console.warn(`[NetMirror] Request failed (${err.code || err.response?.status}). Retrying in ${backoff}ms... (Attempt ${i + 1}/${retries})`);
+            await new Promise(resolve => setTimeout(resolve, backoff));
+            backoff *= 2;
+        }
+    }
+}
+
 // Helper function to make HTTP requests
 function makeRequest(url, options = {}) {
     const config = {
@@ -44,11 +59,7 @@ function makeRequest(url, options = {}) {
         config.data = options.body;
     }
 
-    return axios(config).then(function (response) {
-        // Axios returns data directly, but we need to mimic fetch response for compatibility with existing logic
-        // or just return the response object and let the chain handle it.
-        // The existing logic expects .json() or .text() methods.
-
+    return axiosWithRetry(config).then(function (response) {
         return {
             ok: true,
             status: response.status,
@@ -433,10 +444,8 @@ function getStreamingLinks(contentId, title, platform) {
                         if (!fullUrl.startsWith('/')) fullUrl = '/' + fullUrl;
 
                         // Construct absolute URL
-                        // User explicitly requested double slash // which appears in working links
                         // NETMIRROR_BASE has NO trailing slash, fullUrl has leading slash
-                        // We need to add an extra slash to get //
-                        fullUrl = NETMIRROR_BASE + '/' + fullUrl;
+                        fullUrl = NETMIRROR_BASE + fullUrl;
 
                         // Replace 'unknown::ni' token with actual cookie hash
                         // The cookie itself is in format: hash::timestamp::ni

@@ -2,26 +2,30 @@
 // React Native compatible version with full original functionality
 
 const cheerio = require('cheerio');
+const axios = require('axios');
 
 // TMDB API Configuration
 const TMDB_API_KEY = '439c478a771f35c05022f9feabcca01c';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
-// HDHub4u Configuration
-let MAIN_URL = "https://hdhub4u.rehab";
-const DOMAINS_URL = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json";
-const DOMAIN_CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
-let domainCacheTimestamp = 0;
-
-const HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
-    "Cookie": "xla=s4t",
-    "Referer": `${MAIN_URL}/`,
-};
-
 // =================================================================================
 // UTILITY FUNCTIONS (from Utils.kt)
 // =================================================================================
+
+// Axios with retry helper
+async function axiosWithRetry(url, options = {}, retries = 3, backoff = 1000) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await axios({ url, ...options });
+        } catch (err) {
+            const isRetryable = err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT' || (err.response && err.response.status >= 500);
+            if (i === retries - 1 || !isRetryable) throw err;
+            console.warn(`[HDHub4u] Request failed (${err.code || err.response?.status}). Retrying in ${backoff}ms... (Attempt ${i + 1}/${retries})`);
+            await new Promise(resolve => setTimeout(resolve, backoff));
+            backoff *= 2;
+        }
+    }
+}
 
 // Format bytes to human readable size
 function formatBytes(bytes) {
@@ -161,6 +165,20 @@ function cleanTitle(title) {
     }
 }
 
+// HDHub4u Configuration
+let MAIN_URL = "https://hdhub4u.rehab";
+const DOMAINS_URL = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json";
+const DOMAIN_CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
+let domainCacheTimestamp = 0;
+
+const HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+    "Referer": `${MAIN_URL}/`,
+    "Origin": MAIN_URL
+};
+
+
+
 /**
  * Fetches the latest domain for HDHub4u.
  * Replicates the `getDomains` function from the provider.
@@ -172,24 +190,22 @@ function fetchAndUpdateDomain() {
     }
 
     console.log('[HDHub4u] Fetching latest domain...');
-    return fetch(DOMAINS_URL, {
+    return axiosWithRetry(DOMAINS_URL, {
         method: 'GET',
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
     }).then(function (response) {
-        if (response.ok) {
-            return response.json().then(function (data) {
-                if (data && data.HDHUB4u) {
-                    const newDomain = data.HDHUB4u;
-                    if (newDomain !== MAIN_URL) {
-                        console.log(`[HDHub4u] Updating domain from ${MAIN_URL} to ${newDomain}`);
-                        MAIN_URL = newDomain;
-                        HEADERS.Referer = `${MAIN_URL}/`;
-                        domainCacheTimestamp = now;
-                    }
-                }
-            });
+        const data = response.data;
+        if (data && data.HDHUB4u) {
+            const newDomain = data.HDHUB4u;
+            if (newDomain !== MAIN_URL) {
+                console.log(`[HDHub4u] Updating domain from ${MAIN_URL} to ${newDomain}`);
+                MAIN_URL = newDomain;
+                HEADERS.Referer = `${MAIN_URL}/`;
+                HEADERS.Origin = MAIN_URL;
+                domainCacheTimestamp = now;
+            }
         }
     }).catch(function (error) {
         console.error(`[HDHub4u] Failed to fetch latest domains: ${error.message}`);
@@ -213,12 +229,10 @@ function getCurrentDomain() {
  * @returns {Promise<string>} The resolved direct link.
  */
 function getRedirectLinks(url) {
-    return fetch(url, { headers: HEADERS })
+    return axios.get(url, { headers: HEADERS })
         .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            return response.text();
+            console.log('DEBUG: typeof rot13 is', typeof rot13);
+            return response.data;
         })
         .then(doc => {
             const regex = /s\('o','([A-Za-z0-9+/=]+)'|ck\('_wp_http_\d+','([^']+)'/g;
@@ -247,9 +261,8 @@ function getRedirectLinks(url) {
             const data = btoa(jsonObject.data || '').trim();
             const wpHttp = (jsonObject.blog_url || '').trim();
             if (wpHttp && data) {
-                return fetch(`${wpHttp}?re=${data}`, { headers: HEADERS })
-                    .then(directLinkResponse => directLinkResponse.text())
-                    .then(text => text.trim());
+                return axios.get(`${wpHttp}?re=${data}`, { headers: HEADERS })
+                    .then(directLinkResponse => directLinkResponse.data.trim());
             }
 
             return url; // Return original url if logic fails
@@ -286,9 +299,9 @@ function pixelDrainExtractor(link) {
         const infoUrl = `https://pixeldrain.com/api/file/${fileId}/info`;
         let fileInfo = { name: '', quality: 'Unknown', size: 0 };
 
-        return fetch(infoUrl, { headers: HEADERS })
-            .then(response => response.json())
-            .then(info => {
+        return axiosWithRetry(infoUrl, { headers: HEADERS })
+            .then(response => {
+                const info = response.data;
                 if (info && info.name) {
                     fileInfo.name = info.name;
                     fileInfo.size = info.size || 0;
@@ -335,9 +348,9 @@ function streamTapeExtractor(link) {
     url.hostname = 'streamtape.com';
     const normalizedLink = url.toString();
 
-    return fetch(normalizedLink, { headers: HEADERS })
-        .then(res => res.text())
-        .then(data => {
+    return axiosWithRetry(normalizedLink, { headers: HEADERS })
+        .then(res => {
+            const data = res.data;
             // Regex to find something like: document.getElementById('videolink').innerHTML = ...
             const match = data.match(/document\.getElementById\('videolink'\)\.innerHTML = (.*?);/);
 
@@ -372,7 +385,7 @@ function streamTapeExtractor(link) {
 }
 
 function hubStreamExtractor(url, referer) {
-    return fetch(url, { headers: { ...HEADERS, Referer: referer } })
+    return axiosWithRetry(url, { headers: { ...HEADERS, Referer: referer } })
         .then(response => {
             // For now, return the URL as-is since VidStack extraction is complex
             return [{ source: 'Hubstream', quality: 'Unknown', url }];
@@ -384,9 +397,9 @@ function hubStreamExtractor(url, referer) {
 }
 
 function hbLinksExtractor(url, referer) {
-    return fetch(url, { headers: { ...HEADERS, Referer: referer } })
-        .then(response => response.text())
-        .then(data => {
+    return axiosWithRetry(url, { headers: { ...HEADERS, Referer: referer } })
+        .then(response => {
+            const data = response.data;
             const $ = cheerio.load(data);
             const links = $('h3 a, div.entry-content p a').map((i, el) => $(el).attr('href')).get();
 
@@ -402,9 +415,9 @@ function hbLinksExtractor(url, referer) {
 }
 
 function hubCdnExtractor(url, referer) {
-    return fetch(url, { headers: { ...HEADERS, Referer: referer } })
-        .then(response => response.text())
-        .then(data => {
+    return axiosWithRetry(url, { headers: { ...HEADERS, Referer: referer } })
+        .then(response => {
+            const data = response.data;
             const encodedMatch = data.match(/r=([A-Za-z0-9+/=]+)/);
             if (encodedMatch && encodedMatch[1]) {
                 const m3u8Data = atob(encodedMatch[1]);
@@ -421,9 +434,9 @@ function hubCdnExtractor(url, referer) {
 }
 
 function hubDriveExtractor(url, referer) {
-    return fetch(url, { headers: { ...HEADERS, Referer: referer } })
-        .then(response => response.text())
-        .then(data => {
+    return axiosWithRetry(url, { headers: { ...HEADERS, Referer: referer } })
+        .then(response => {
+            const data = response.data;
             const $ = cheerio.load(data);
             const href = $('.btn.btn-primary.btn-user.btn-success1.m-1').attr('href');
             if (href) {
@@ -441,18 +454,17 @@ function hubCloudExtractor(url, referer) {
         currentUrl = currentUrl.replace("hubcloud.ink", "hubcloud.dad");
     }
 
-    return fetch(currentUrl, { headers: { ...HEADERS, Referer: referer } })
-        .then(pageResponse => pageResponse.text())
-        .then(pageData => {
+    return axiosWithRetry(currentUrl, { headers: { ...HEADERS, Referer: referer } })
+        .then(pageResponse => {
+            const pageData = pageResponse.data;
             let finalUrl = currentUrl;
 
             if (!currentUrl.includes("hubcloud.php")) {
                 const scriptUrlMatch = pageData.match(/var url = '([^']*)'/);
                 if (scriptUrlMatch && scriptUrlMatch[1]) {
                     finalUrl = scriptUrlMatch[1];
-                    return fetch(finalUrl, { headers: { ...HEADERS, Referer: currentUrl } })
-                        .then(secondResponse => secondResponse.text())
-                        .then(secondData => ({ pageData: secondData, finalUrl }));
+                    return axiosWithRetry(finalUrl, { headers: { ...HEADERS, Referer: currentUrl } })
+                        .then(secondResponse => ({ pageData: secondResponse.data, finalUrl }));
                 }
             }
             return { pageData, finalUrl };
@@ -516,15 +528,15 @@ function hubCloudExtractor(url, referer) {
                     links.push({ source: `HubCloud - S3 Server ${labelExtras}`, quality, url: link, size: sizeInBytes, fileName });
                     return Promise.resolve();
                 } else if (text.includes("BuzzServer")) {
-                    return fetch(`${link}/download`, {
-                        method: 'GET',
+                    return axiosWithRetry(`${link}/download`, {
                         headers: { ...HEADERS, Referer: link },
-                        redirect: 'manual' // Do not follow redirects automatically
+                        maxRedirects: 0,
+                        validateStatus: (status) => status >= 200 && status < 400
                     })
                         .then(buzzResp => {
                             if (buzzResp.status >= 300 && buzzResp.status < 400) {
                                 // It's a redirect, get the location header
-                                const location = buzzResp.headers.get('location');
+                                const location = buzzResp.headers.location;
                                 if (location && location.includes('hx-redirect=')) {
                                     const hxRedirectMatch = location.match(/hx-redirect=([^&]+)/);
                                     if (hxRedirectMatch) {
@@ -547,13 +559,13 @@ function hubCloudExtractor(url, referer) {
                     const processRedirects = (i) => {
                         if (i >= 5) return Promise.resolve(finalLink);
 
-                        return fetch(currentRedirectUrl, {
-                            method: 'GET',
-                            redirect: 'manual' // Don't follow redirects automatically
+                        return axiosWithRetry(currentRedirectUrl, {
+                            maxRedirects: 0,
+                            validateStatus: (status) => status >= 200 && status < 400
                         })
                             .then(response => {
                                 if (response.status >= 300 && response.status < 400) {
-                                    const location = response.headers.get('location');
+                                    const location = response.headers.location;
                                     if (location) {
                                         if (location.includes("link=")) {
                                             finalLink = location.substring(location.indexOf("link=") + 5);
@@ -656,30 +668,74 @@ function loadExtractor(url, referer = MAIN_URL) {
  * @param {string} query The search term.
  * @returns {Promise<Array<{title: string, url: string, poster: string}>>} A list of search results.
  */
+/**
+ * Searches for media on HDHub4u using the client-side API.
+ * @param {string} query The search term.
+ * @returns {Promise<Array<{title: string, url: string, poster: string}>>} A list of search results.
+ */
 function search(query) {
     return getCurrentDomain()
         .then(currentDomain => {
-            const searchUrl = `${currentDomain}/?s=${encodeURIComponent(query)}`;
-            return fetch(searchUrl, { headers: HEADERS });
-        })
-        .then(response => response.text())
-        .then(data => {
-            const $ = cheerio.load(data);
-            return $('.recent-movies > li.thumb').map((i, el) => {
-                const element = $(el);
-                const title = element.find('figcaption:nth-child(2) > a:nth-child(1) > p:nth-child(1)').text().trim();
+            const today = new Date().toISOString().split('T')[0];
+            const params = {
+                q: query,
+                query_by: 'post_title,category,stars,director,imdb_id',
+                query_by_weights: '4,2,2,2,4',
+                sort_by: 'sort_by_date:desc',
+                limit: '15',
+                highlight_fields: 'none',
+                use_cache: 'true',
+                page: '1',
+                analytics_tag: today
+            };
 
-                // Extract year from title (look for 4-digit numbers in parentheses or after title)
+            const apiUrl = `https://search.pingora.fyi/collections/post/documents/search`;
+
+            // Ensure headers are set correctly for the API
+            const apiHeaders = {
+                ...HEADERS,
+                'Referer': `${currentDomain}/`,
+                'Origin': currentDomain
+            };
+
+            return axiosWithRetry(apiUrl, { params, headers: apiHeaders })
+                .then(response => {
+                    return { data: response.data, currentDomain };
+                });
+        })
+        .then(({ data, currentDomain }) => {
+            if (!data.hits || data.hits.length === 0) {
+                console.log('[HDHub4u] No search results found via API');
+                return [];
+            }
+
+            return data.hits.map(hit => {
+                const doc = hit.document;
+                const title = doc.post_title;
+                let link = doc.permalink;
+
+                // Ensure link is absolute
+                if (link && !link.startsWith('http')) {
+                    link = `${currentDomain}${link.startsWith('/') ? '' : '/'}${link}`;
+                }
+
+                const poster = doc.post_thumbnail || '';
+
+                // Extract year from title
                 const yearMatch = title.match(/\((\d{4})\)|\b(\d{4})\b/);
                 const year = yearMatch ? parseInt(yearMatch[1] || yearMatch[2]) : null;
 
                 return {
                     title: title,
-                    url: element.find('figure:nth-child(1) > a:nth-child(2)').attr('href'),
-                    poster: element.find('figure:nth-child(1) > img:nth-child(1)').attr('src'),
+                    url: link,
+                    poster: poster,
                     year: year
                 };
-            }).get();
+            });
+        })
+        .catch(err => {
+            console.error(`[HDHub4u] Search error: ${err.message}`);
+            return [];
         });
 }
 
@@ -691,8 +747,8 @@ function getCinemetaData(imdbId, tvType) {
     if (!imdbId) return Promise.resolve(null);
 
     const cinemetaUrl = `https://v3-cinemeta.strem.io/meta/${tvType}/${imdbId}.json`;
-    return fetch(cinemetaUrl)
-        .then(response => response.json())
+    return axiosWithRetry(cinemetaUrl)
+        .then(response => response.data)
         .catch(e => {
             console.error(`[Cinemeta] Failed to fetch metadata for ${imdbId}:`, e.message);
             return null;
@@ -1063,18 +1119,13 @@ function getTMDBDetails(tmdbId, mediaType) {
     const endpoint = mediaType === 'tv' ? 'tv' : 'movie';
     const url = `${TMDB_BASE_URL}/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=external_ids`;
 
-    return fetch(url, {
-        method: 'GET',
+    return axiosWithRetry(url, {
         headers: {
             'Accept': 'application/json',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
     }).then(function (response) {
-        if (!response.ok) {
-            throw new Error(`TMDB API error: ${response.status}`);
-        }
-        return response.json();
-    }).then(function (data) {
+        const data = response.data;
         const title = mediaType === 'tv' ? data.name : data.title;
         const releaseDate = mediaType === 'tv' ? data.first_air_date : data.release_date;
         const year = releaseDate ? parseInt(releaseDate.split('-')[0]) : null;
