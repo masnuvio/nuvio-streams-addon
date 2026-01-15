@@ -305,6 +305,12 @@ function getStreamingLinks(contentId, title, platform) {
                     if (!fullUrl.startsWith("/"))
                         fullUrl = "/" + fullUrl;
                     fullUrl = NETMIRROR_BASE + fullUrl;
+
+                    // Force replace ::ti with ::ni as requested by user
+                    if (fullUrl.includes('::ti')) {
+                        console.log('[NetMirror] Replacing ::ti with ::ni in link');
+                        fullUrl = fullUrl.replace('::ti', '::ni');
+                    }
                     sources.push({
                         url: fullUrl,
                         quality: source.label,
