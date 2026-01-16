@@ -20,6 +20,7 @@ const { addonBuilder } = require('stremio-addon-sdk');
 require('dotenv').config(); // Ensure environment variables are loaded
 const fs = require('fs').promises;
 const path = require('path');
+const fsSync = require('fs');
 const crypto = require('crypto'); // For hashing cookies
 const Redis = require('ioredis');
 
@@ -89,25 +90,9 @@ if (USE_REDIS_CACHE) {
                     });
                 }
             }, 4 * 60 * 1000); // 4 minutes
-            // --- END: Redis Keep-Alive ---
-        });
 
-        // --- BEGIN: Additional Redis connection lifecycle logging ---
-        redis.on('reconnecting', (delay) => {
-            console.warn(`[Redis Cache] Reconnecting... next attempt in ${delay}ms (current status: ${redis.status})`);
+            console.log('[Redis Cache] Upstash Redis client initialized');
         });
-        redis.on('close', () => {
-            console.warn('[Redis Cache] Connection closed.');
-        });
-        redis.on('end', () => {
-            console.error('[Redis Cache] Connection ended. No further reconnection attempts will be made.');
-        });
-        redis.on('ready', () => {
-            console.log('[Redis Cache] Connection is ready and commands can now be processed.');
-        });
-        // --- END: Additional Redis connection lifecycle logging ---
-
-        console.log('[Redis Cache] Upstash Redis client initialized');
     } catch (err) {
         console.error(`[Redis Cache] Failed to initialize Redis: ${err.message}`);
         console.log('[Redis Cache] Will use file-based cache as fallback');
@@ -165,6 +150,11 @@ const { getStreams: getNetMirrorStreams } = require('./providers/netmirror.js');
 const ENABLE_CASTLE_PROVIDER = process.env.ENABLE_CASTLE_PROVIDER !== 'false';
 console.log(`[addon.js] Castle provider fetching enabled: ${ENABLE_CASTLE_PROVIDER}`);
 const { getStreams: getCastleStreams } = require('./providers/castle.js');
+
+// NEW: Read environment variable for Vadapav
+const ENABLE_VADAPAV_PROVIDER = process.env.ENABLE_VADAPAV_PROVIDER !== 'false';
+console.log(`[addon.js] Vadapav provider fetching enabled: ${ENABLE_VADAPAV_PROVIDER}`);
+const { getStreams: getVadapavStreams } = require('./providers/vadapav.js');
 
 // Helper function to make requests to external provider services
 async function fetchFromExternalProvider(baseUrl, providerName, tmdbId, type, season = null, episode = null) {
@@ -1007,6 +997,8 @@ builder.defineStreamHandler(async (args) => {
 
     // Helper for timing provider fetches
     const timeProvider = async (providerName, fetchPromise) => {
+        console.error(`[timeProvider] Starting ${providerName}`);
+        await fs.appendFile('debug_vadapav_force.txt', `[${new Date().toISOString()}] [timeProvider] Starting ${providerName}\n`).catch(() => { });
         const startTime = Date.now();
         const result = await fetchPromise;
         const endTime = Date.now();
@@ -1305,6 +1297,50 @@ builder.defineStreamHandler(async (args) => {
             }
         },
 
+        // Vadapav provider
+        vadapav: async () => {
+            console.error('[Vadapav] Function called!');
+            try {
+                fsSync.appendFileSync('debug_vadapav_force.txt', `[${new Date().toISOString()}] [Vadapav] Function called!\n`);
+            } catch (e) { console.error('Logging failed', e); }
+
+            try {
+                await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Vadapav provider called. Type: ${tmdbTypeFromId}, ID: ${id}\n`);
+
+                const cached = await getStreamFromCache('vadapav', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) {
+                    await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Cache hit: ${cached.length} streams\n`);
+                    return cached.map(s => ({ ...s, provider: 'Vadapav' }));
+                }
+
+                console.log(`[Vadapav] Fetching new streams...`);
+                await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Fetching new streams...\n`);
+
+                let imdbIdForProvider = null;
+                if (id.startsWith('tt')) {
+                    imdbIdForProvider = id.split(':')[0];
+                }
+
+                if (!imdbIdForProvider && id.startsWith('tt')) imdbIdForProvider = id.split(':')[0];
+
+                if (!imdbIdForProvider) {
+                    console.log('[Vadapav] Skipping: No IMDb ID available.');
+                    await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Skipping: No IMDb ID\n`);
+                    return [];
+                }
+
+                await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Calling getVadapavStreams with ${imdbIdForProvider}\n`);
+                const streams = await getVadapavStreams(tmdbTypeFromId, imdbIdForProvider, seasonNum, episodeNum);
+                await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Result: ${streams ? streams.length : 'null'} streams\n`);
+
+                await saveStreamToCache('vadapav', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'Vadapav' }));
+            } catch (err) {
+                console.error(`[Vadapav] Error:`, err.message);
+                await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Error: ${err.message}\n`);
+                return [];
+            }
+        },
 
     };
 
@@ -1324,6 +1360,7 @@ builder.defineStreamHandler(async (args) => {
             timeProvider('VidLink', providerFetchFunctions.vidlink()),
             timeProvider('NetMirror', providerFetchFunctions.netmirror()),
             timeProvider('Castle', providerFetchFunctions.castle()),
+            timeProvider('Vadapav', providerFetchFunctions.vadapav()),
 
         ];
 
@@ -1356,7 +1393,7 @@ builder.defineStreamHandler(async (args) => {
             ));
 
             providerResults = currentResults.map((result, index) => {
-                const providerNames = ['ShowBox', 'TopMovies', '4KHDHub', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink', 'NetMirror', 'Castle'];
+                const providerNames = ['ShowBox', 'TopMovies', '4KHDHub', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink', 'NetMirror', 'Castle', 'Vadapav'];
                 if (result.status === 'fulfilled' && Array.isArray(result.value) && result.value.length > 0) {
                     console.log(`[Timeout] Provider ${providerNames[index]} completed with ${result.value.length} streams.`);
                     return result.value;
@@ -1387,6 +1424,7 @@ builder.defineStreamHandler(async (args) => {
             'VidLink': ENABLE_VIDLINK_PROVIDER && shouldFetch('vidlink') ? applyAllStreamFilters(providerResults[6], 'VidLink', minQualitiesPreferences.vidlink, excludeCodecsPreferences.vidlink) : [],
             'NetMirror': ENABLE_NETMIRROR_PROVIDER && shouldFetch('netmirror') ? applyAllStreamFilters(providerResults[7], 'NetMirror', minQualitiesPreferences.netmirror, excludeCodecsPreferences.netmirror) : [],
             'Castle': ENABLE_CASTLE_PROVIDER && shouldFetch('castle') ? applyAllStreamFilters(providerResults[8], 'Castle', minQualitiesPreferences.castle, excludeCodecsPreferences.castle) : [],
+            'Vadapav': shouldFetch('vadapav') ? applyAllStreamFilters(providerResults[9], 'Vadapav', minQualitiesPreferences.vadapav, excludeCodecsPreferences.vadapav) : [],
 
         };
 
@@ -1407,7 +1445,7 @@ builder.defineStreamHandler(async (args) => {
 
         // Combine streams in the preferred provider order
         combinedRawStreams = [];
-        const providerOrder = ['ShowBox', 'NetMirror', 'Castle', '4KHDHub', 'TopMovies', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink'];
+        const providerOrder = ['ShowBox', 'NetMirror', 'Castle', 'Vadapav', '4KHDHub', 'TopMovies', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink'];
         providerOrder.forEach(providerKey => {
             if (streamsByProvider[providerKey] && streamsByProvider[providerKey].length > 0) {
                 combinedRawStreams.push(...streamsByProvider[providerKey]);

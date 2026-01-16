@@ -1,0 +1,20 @@
+{
+    "name": "csx-stremio-addon",
+    "version": "1.0.0",
+    "description": "Stremio addon converted from CSX CineStream provider",
+    "main": "addon.js",
+    "scripts": {
+        "start": "node addon.js",
+        "dev": "nodemon addon.js"
+    },
+    "dependencies": {
+        "stremio-addon-sdk": "^1.6.10",
+        "axios": "^1.6.2",
+        "cheerio": "^1.0.0-rc.12",
+        "dotenv": "^16.3.1",
+        "cors": "^2.8.5"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.1"
+    }
+}
