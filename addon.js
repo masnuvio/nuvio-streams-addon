@@ -156,6 +156,26 @@ const ENABLE_VADAPAV_PROVIDER = process.env.ENABLE_VADAPAV_PROVIDER !== 'false';
 console.log(`[addon.js] Vadapav provider fetching enabled: ${ENABLE_VADAPAV_PROVIDER}`);
 const { getStreams: getVadapavStreams } = require('./providers/vadapav.js');
 
+// NEW: Read environment variable for Bollyflix
+const ENABLE_BOLLYFLIX_PROVIDER = process.env.ENABLE_BOLLYFLIX_PROVIDER !== 'false';
+console.log(`[addon.js] Bollyflix provider fetching enabled: ${ENABLE_BOLLYFLIX_PROVIDER}`);
+const { getStreams: getBollyflixStreams } = require('./providers/bollyflix.js');
+
+// NEW: Read environment variable for VegaMovies
+const ENABLE_VEGAMOVIES_PROVIDER = process.env.ENABLE_VEGAMOVIES_PROVIDER !== 'false';
+console.log(`[addon.js] VegaMovies provider fetching enabled: ${ENABLE_VEGAMOVIES_PROVIDER}`);
+const { getStreams: getVegaMoviesStreams } = require('./providers/vegamovies.js');
+
+// NEW: Read environment variable for GDIndex
+const ENABLE_GDINDEX_PROVIDER = process.env.ENABLE_GDINDEX_PROVIDER !== 'false';
+console.log(`[addon.js] GDIndex provider fetching enabled: ${ENABLE_GDINDEX_PROVIDER}`);
+const { getStreams: getGDIndexStreams } = require('./providers/gdindex.js');
+
+// NEW: Read environment variable for OnlineMoviesHindi
+const ENABLE_ONLINEMOVIESHINDI_PROVIDER = process.env.ENABLE_ONLINEMOVIESHINDI_PROVIDER !== 'false';
+console.log(`[addon.js] OnlineMoviesHindi provider fetching enabled: ${ENABLE_ONLINEMOVIESHINDI_PROVIDER}`);
+const { getStreams: getOnlineMoviesHindiStreams } = require('./providers/onlinemovieshindi.js');
+
 // Helper function to make requests to external provider services
 async function fetchFromExternalProvider(baseUrl, providerName, tmdbId, type, season = null, episode = null) {
     try {
@@ -1343,6 +1363,24 @@ builder.defineStreamHandler(async (args) => {
             }
         },
 
+        // Bollyflix provider
+        bollyflix: async () => {
+            if (!ENABLE_BOLLYFLIX_PROVIDER) return [];
+            if (!shouldFetch('bollyflix')) return [];
+            try {
+                const cached = await getStreamFromCache('bollyflix', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'Bollyflix' }));
+
+                console.log(`[Bollyflix] Fetching new streams...`);
+                const streams = await getBollyflixStreams(tmdbTypeFromId, id, seasonNum, episodeNum);
+                await saveStreamToCache('bollyflix', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'Bollyflix' }));
+            } catch (err) {
+                console.error(`[Bollyflix] Error:`, err.message);
+                return [];
+            }
+        },
+
     };
 
     // Execute all provider fetches in parallel
@@ -1362,6 +1400,10 @@ builder.defineStreamHandler(async (args) => {
             timeProvider('NetMirror', providerFetchFunctions.netmirror()),
             timeProvider('Castle', providerFetchFunctions.castle()),
             timeProvider('Vadapav', providerFetchFunctions.vadapav()),
+            timeProvider('Bollyflix', providerFetchFunctions.bollyflix()),
+            timeProvider('VegaMovies', providerFetchFunctions.vegamovies()),
+            timeProvider('GDIndex', providerFetchFunctions.gdindex()),
+            timeProvider('OnlineMoviesHindi', providerFetchFunctions.onlinemovieshindi()),
 
         ];
 
@@ -1394,7 +1436,7 @@ builder.defineStreamHandler(async (args) => {
             ));
 
             providerResults = currentResults.map((result, index) => {
-                const providerNames = ['ShowBox', 'TopMovies', '4KHDHub', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink', 'NetMirror', 'Castle', 'Vadapav'];
+                const providerNames = ['ShowBox', 'TopMovies', '4KHDHub', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink', 'NetMirror', 'Castle', 'Vadapav', 'Bollyflix', 'VegaMovies', 'GDIndex', 'OnlineMoviesHindi'];
                 if (result.status === 'fulfilled' && Array.isArray(result.value) && result.value.length > 0) {
                     console.log(`[Timeout] Provider ${providerNames[index]} completed with ${result.value.length} streams.`);
                     return result.value;
@@ -1426,6 +1468,10 @@ builder.defineStreamHandler(async (args) => {
             'NetMirror': ENABLE_NETMIRROR_PROVIDER && shouldFetch('netmirror') ? applyAllStreamFilters(providerResults[7], 'NetMirror', minQualitiesPreferences.netmirror, excludeCodecsPreferences.netmirror) : [],
             'Castle': ENABLE_CASTLE_PROVIDER && shouldFetch('castle') ? applyAllStreamFilters(providerResults[8], 'Castle', minQualitiesPreferences.castle, excludeCodecsPreferences.castle) : [],
             'Vadapav': shouldFetch('vadapav') ? applyAllStreamFilters(providerResults[9], 'Vadapav', minQualitiesPreferences.vadapav, excludeCodecsPreferences.vadapav) : [],
+            'Bollyflix': shouldFetch('bollyflix') ? applyAllStreamFilters(providerResults[10], 'Bollyflix', minQualitiesPreferences.bollyflix, excludeCodecsPreferences.bollyflix) : [],
+            'VegaMovies': shouldFetch('vegamovies') ? applyAllStreamFilters(providerResults[11], 'VegaMovies', minQualitiesPreferences.vegamovies, excludeCodecsPreferences.vegamovies) : [],
+            'GDIndex': shouldFetch('gdindex') ? applyAllStreamFilters(providerResults[12], 'GDIndex', minQualitiesPreferences.gdindex, excludeCodecsPreferences.gdindex) : [],
+            'OnlineMoviesHindi': shouldFetch('onlinemovieshindi') ? applyAllStreamFilters(providerResults[13], 'OnlineMoviesHindi', minQualitiesPreferences.onlinemovieshindi, excludeCodecsPreferences.onlinemovieshindi) : [],
 
         };
 
@@ -1446,7 +1492,7 @@ builder.defineStreamHandler(async (args) => {
 
         // Combine streams in the preferred provider order
         combinedRawStreams = [];
-        const providerOrder = ['ShowBox', 'NetMirror', 'Castle', 'Vadapav', '4KHDHub', 'TopMovies', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink'];
+        const providerOrder = ['ShowBox', 'NetMirror', 'Castle', 'Vadapav', 'Bollyflix', 'VegaMovies', 'GDIndex', 'OnlineMoviesHindi', '4KHDHub', 'TopMovies', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink'];
         providerOrder.forEach(providerKey => {
             if (streamsByProvider[providerKey] && streamsByProvider[providerKey].length > 0) {
                 combinedRawStreams.push(...streamsByProvider[providerKey]);
