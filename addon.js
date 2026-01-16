@@ -176,6 +176,26 @@ const ENABLE_ONLINEMOVIESHINDI_PROVIDER = process.env.ENABLE_ONLINEMOVIESHINDI_P
 console.log(`[addon.js] OnlineMoviesHindi provider fetching enabled: ${ENABLE_ONLINEMOVIESHINDI_PROVIDER}`);
 const { getStreams: getOnlineMoviesHindiStreams } = require('./providers/onlinemovieshindi.js');
 
+// NEW: Read environment variable for MoviesDrive
+const ENABLE_MOVIESDRIVE_PROVIDER = process.env.ENABLE_MOVIESDRIVE_PROVIDER !== 'false';
+console.log(`[addon.js] MoviesDrive provider fetching enabled: ${ENABLE_MOVIESDRIVE_PROVIDER}`);
+const { getStreams: getMoviesDriveStreams } = require('./providers/moviesdrive.js');
+
+// NEW: Read environment variable for MoviesMod
+const ENABLE_MOVIESMOD_PROVIDER = process.env.ENABLE_MOVIESMOD_PROVIDER !== 'false';
+console.log(`[addon.js] MoviesMod provider fetching enabled: ${ENABLE_MOVIESMOD_PROVIDER}`);
+const { getStreams: getMoviesModStreams } = require('./providers/moviesmod.js');
+
+// NEW: Read environment variable for LuxMovies
+const ENABLE_LUXMOVIES_PROVIDER = process.env.ENABLE_LUXMOVIES_PROVIDER !== 'false';
+console.log(`[addon.js] LuxMovies provider fetching enabled: ${ENABLE_LUXMOVIES_PROVIDER}`);
+const { getStreams: getLuxMoviesStreams } = require('./providers/luxmovies.js');
+
+// NEW: Read environment variable for Rogmovies
+const ENABLE_ROGMOVIES_PROVIDER = process.env.ENABLE_ROGMOVIES_PROVIDER !== 'false';
+console.log(`[addon.js] Rogmovies provider fetching enabled: ${ENABLE_ROGMOVIES_PROVIDER}`);
+const { getStreams: getRogmoviesStreams } = require('./providers/rogmovies.js');
+
 // Helper function to make requests to external provider services
 async function fetchFromExternalProvider(baseUrl, providerName, tmdbId, type, season = null, episode = null) {
     try {
@@ -1404,6 +1424,10 @@ builder.defineStreamHandler(async (args) => {
             timeProvider('VegaMovies', providerFetchFunctions.vegamovies()),
             timeProvider('GDIndex', providerFetchFunctions.gdindex()),
             timeProvider('OnlineMoviesHindi', providerFetchFunctions.onlinemovieshindi()),
+            timeProvider('MoviesDrive', providerFetchFunctions.moviesdrive()),
+            timeProvider('MoviesMod', providerFetchFunctions.moviesmod()),
+            timeProvider('LuxMovies', providerFetchFunctions.luxmovies()),
+            timeProvider('Rogmovies', providerFetchFunctions.rogmovies()),
 
         ];
 
@@ -1436,7 +1460,7 @@ builder.defineStreamHandler(async (args) => {
             ));
 
             providerResults = currentResults.map((result, index) => {
-                const providerNames = ['ShowBox', 'TopMovies', '4KHDHub', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink', 'NetMirror', 'Castle', 'Vadapav', 'Bollyflix', 'VegaMovies', 'GDIndex', 'OnlineMoviesHindi'];
+                const providerNames = ['ShowBox', 'TopMovies', '4KHDHub', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink', 'NetMirror', 'Castle', 'Vadapav', 'Bollyflix', 'VegaMovies', 'GDIndex', 'OnlineMoviesHindi', 'MoviesDrive', 'MoviesMod', 'LuxMovies', 'Rogmovies'];
                 if (result.status === 'fulfilled' && Array.isArray(result.value) && result.value.length > 0) {
                     console.log(`[Timeout] Provider ${providerNames[index]} completed with ${result.value.length} streams.`);
                     return result.value;
@@ -1472,6 +1496,10 @@ builder.defineStreamHandler(async (args) => {
             'VegaMovies': shouldFetch('vegamovies') ? applyAllStreamFilters(providerResults[11], 'VegaMovies', minQualitiesPreferences.vegamovies, excludeCodecsPreferences.vegamovies) : [],
             'GDIndex': shouldFetch('gdindex') ? applyAllStreamFilters(providerResults[12], 'GDIndex', minQualitiesPreferences.gdindex, excludeCodecsPreferences.gdindex) : [],
             'OnlineMoviesHindi': shouldFetch('onlinemovieshindi') ? applyAllStreamFilters(providerResults[13], 'OnlineMoviesHindi', minQualitiesPreferences.onlinemovieshindi, excludeCodecsPreferences.onlinemovieshindi) : [],
+            'MoviesDrive': shouldFetch('moviesdrive') ? applyAllStreamFilters(providerResults[14], 'MoviesDrive', minQualitiesPreferences.moviesdrive, excludeCodecsPreferences.moviesdrive) : [],
+            'MoviesMod': shouldFetch('moviesmod') ? applyAllStreamFilters(providerResults[15], 'MoviesMod', minQualitiesPreferences.moviesmod, excludeCodecsPreferences.moviesmod) : [],
+            'LuxMovies': shouldFetch('luxmovies') ? applyAllStreamFilters(providerResults[16], 'LuxMovies', minQualitiesPreferences.luxmovies, excludeCodecsPreferences.luxmovies) : [],
+            'Rogmovies': shouldFetch('rogmovies') ? applyAllStreamFilters(providerResults[17], 'Rogmovies', minQualitiesPreferences.rogmovies, excludeCodecsPreferences.rogmovies) : [],
 
         };
 
@@ -1492,7 +1520,7 @@ builder.defineStreamHandler(async (args) => {
 
         // Combine streams in the preferred provider order
         combinedRawStreams = [];
-        const providerOrder = ['ShowBox', 'NetMirror', 'Castle', 'Vadapav', 'Bollyflix', 'VegaMovies', 'GDIndex', 'OnlineMoviesHindi', '4KHDHub', 'TopMovies', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink'];
+        const providerOrder = ['ShowBox', 'NetMirror', 'Castle', 'Vadapav', 'Bollyflix', 'VegaMovies', 'GDIndex', 'OnlineMoviesHindi', 'MoviesDrive', 'MoviesMod', 'LuxMovies', 'Rogmovies', '4KHDHub', 'TopMovies', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink'];
         providerOrder.forEach(providerKey => {
             if (streamsByProvider[providerKey] && streamsByProvider[providerKey].length > 0) {
                 combinedRawStreams.push(...streamsByProvider[providerKey]);
