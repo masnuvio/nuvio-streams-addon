@@ -238,6 +238,28 @@ To keep your server clean and running smoothly, you can use the included cleanup
 sudo bash cleanup.sh
 ```
 
+### Docker Cleanup
+
+If you are using Docker, use the `docker-cleanup.sh` script instead:
+
+```bash
+# Run docker cleanup script
+sudo bash docker-cleanup.sh
+```
+
+This will:
+- ✅ Clear host log files
+- ✅ Clean internal container cache
+- ✅ Remove internal temporary files
+- ✅ Optionally prune unused Docker resources
+
+You can also set up a cron job:
+
+```bash
+# Run docker cleanup every Sunday at 3 AM
+0 3 * * 0 bash /opt/nuvio-streams/docker-cleanup.sh >> /var/log/nuvio-cleanup.log 2>&1
+```
+
 This script will:
 - ✅ Flush PM2 logs
 - ✅ Clear application log files
