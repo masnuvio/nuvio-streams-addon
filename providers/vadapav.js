@@ -71,10 +71,16 @@ async function getStreams(type, imdbId, season, episode) {
             const text = $(el).text();
 
             if (href) {
+                const details = parseFilename(text);
+                const title = `Vadapav ${details.quality} ${details.language}\n${text}`;
+
                 streams.push({
                     name: 'Vadapav',
-                    title: `Vadapav [${text}]`,
-                    url: vadapavAPI + href
+                    title: title,
+                    url: vadapavAPI + href,
+                    behaviorHints: {
+                        bingeGroup: `vadapav-${details.quality}`
+                    }
                 });
             }
         });
@@ -85,6 +91,37 @@ async function getStreams(type, imdbId, season, episode) {
         console.error("Vadapav Error:", error.message);
         return [];
     }
+}
+
+function parseFilename(filename) {
+    let quality = 'Unknown';
+    let language = '';
+
+    // Quality
+    if (filename.match(/2160p|4k/i)) quality = '4K';
+    else if (filename.match(/1080p/i)) quality = '1080p';
+    else if (filename.match(/720p/i)) quality = '720p';
+    else if (filename.match(/480p/i)) quality = '480p';
+
+    // Language
+    if (filename.match(/hindi|hin/i)) language += '🇮🇳 Hindi ';
+    if (filename.match(/english|eng/i)) language += '🇺🇸 English ';
+    if (filename.match(/dual|multi/i)) language += '🌎 Dual Audio ';
+    if (filename.match(/tam|tamil/i)) language += 'Tamil ';
+    if (filename.match(/tel|telugu/i)) language += 'Telugu ';
+
+    // Codec/HDR
+    const extras = [];
+    if (filename.match(/x265|hevc/i)) extras.push('HEVC');
+    if (filename.match(/10bit/i)) extras.push('10bit');
+    if (filename.match(/hdr/i)) extras.push('HDR');
+    if (filename.match(/dv|dolby vision/i)) extras.push('DV');
+
+    return {
+        quality,
+        language: language.trim(),
+        extras: extras.join(' ')
+    };
 }
 
 async function getMetadata(type, id) {
