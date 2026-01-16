@@ -248,7 +248,7 @@ const RETRY_DELAY_MS = 1000;
 
 // Default to proxy/direct mode with Showbox.js
 console.log('Using proxy/direct mode with Showbox.js');
-const scraper = require('./providers/Showbox.js');
+const scraper = require('./providers/showbox.js');
 
 // Destructure the required functions from the selected scraper
 const { getStreamsFromTmdbId, convertImdbToTmdb, sortStreamsByQuality } = scraper;
