@@ -3,6 +3,8 @@ const cheerio = require('cheerio');
 
 const vadapavAPI = "https://vadapav.mov";
 
+console.log("Vadapav Provider v2 Loaded (Metadata Parsing Enabled)");
+
 async function getStreams(type, imdbId, season, episode) {
     try {
         // Need to resolve IMDB ID to title/year first. 
