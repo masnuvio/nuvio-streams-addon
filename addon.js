@@ -1307,11 +1307,12 @@ builder.defineStreamHandler(async (args) => {
             try {
                 await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Vadapav provider called. Type: ${tmdbTypeFromId}, ID: ${id}\n`);
 
-                const cached = await getStreamFromCache('vadapav', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
-                if (cached) {
-                    await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Cache hit: ${cached.length} streams\n`);
-                    return cached.map(s => ({ ...s, provider: 'Vadapav' }));
-                }
+                // const cached = await getStreamFromCache('vadapav', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                // if (cached) {
+                //     await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Cache hit: ${cached.length} streams\n`);
+                //     return cached.map(s => ({ ...s, provider: 'Vadapav' }));
+                // }
+                console.log('[Vadapav] Cache disabled for debugging.');
 
                 console.log(`[Vadapav] Fetching new streams...`);
                 await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Fetching new streams...\n`);
