@@ -1446,7 +1446,7 @@ builder.defineStreamHandler(async (args) => {
 
         // --- NEW: VidLink Proxy Rewrite ---
         // Rewrite VidLink URLs to point to our local proxy to fix Content-Type headers
-        if (stream.provider === 'vidlink' && global.currentRequestConfig && global.currentRequestConfig.baseUrl) {
+        if (stream.provider === 'VidLink' && global.currentRequestConfig && global.currentRequestConfig.baseUrl) {
             const baseUrl = global.currentRequestConfig.baseUrl;
             const encodedUrl = encodeURIComponent(stream.url);
             stream.url = `${baseUrl}/vidlink/m3u8?url=${encodedUrl}`;
