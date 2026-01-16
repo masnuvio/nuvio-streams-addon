@@ -20,7 +20,6 @@ const { addonBuilder } = require('stremio-addon-sdk');
 require('dotenv').config(); // Ensure environment variables are loaded
 const fs = require('fs').promises;
 const path = require('path');
-const fsSync = require('fs');
 const crypto = require('crypto'); // For hashing cookies
 const Redis = require('ioredis');
 
@@ -90,25 +89,80 @@ if (USE_REDIS_CACHE) {
                     });
                 }
             }, 4 * 60 * 1000); // 4 minutes
-
-            console.log('[Redis Cache] Upstash Redis client initialized');
+            // --- END: Redis Keep-Alive ---
         });
+
+        // --- BEGIN: Additional Redis connection lifecycle logging ---
+        redis.on('reconnecting', (delay) => {
+            console.warn(`[Redis Cache] Reconnecting... next attempt in ${delay}ms (current status: ${redis.status})`);
+        });
+        redis.on('close', () => {
+            console.warn('[Redis Cache] Connection closed.');
+        });
+        redis.on('end', () => {
+            console.error('[Redis Cache] Connection ended. No further reconnection attempts will be made.');
+        });
+        redis.on('ready', () => {
+            console.log('[Redis Cache] Connection is ready and commands can now be processed.');
+        });
+        // --- END: Additional Redis connection lifecycle logging ---
+
+        console.log('[Redis Cache] Upstash Redis client initialized');
     } catch (err) {
         console.error(`[Redis Cache] Failed to initialize Redis: ${err.message}`);
         console.log('[Redis Cache] Will use file-based cache as fallback');
     }
 }
 
+// (Removed) Cuevana, HollyMovieHD, Xprime provider flags
+
+// NEW: Read environment variable for VidZee
+const ENABLE_VIDZEE_PROVIDER = process.env.ENABLE_VIDZEE_PROVIDER !== 'false'; // Defaults to true
+console.log(`[addon.js] VidZee provider fetching enabled: ${ENABLE_VIDZEE_PROVIDER}`);
+
+// NEW: Read environment variable for MP4Hydra
+const ENABLE_MP4HYDRA_PROVIDER = process.env.ENABLE_MP4HYDRA_PROVIDER !== 'false'; // Defaults to true if not set or not 'false'
+console.log(`[addon.js] MP4Hydra provider fetching enabled: ${ENABLE_MP4HYDRA_PROVIDER}`);
+
+// (Removed) HiAnime provider flag
+
+// NEW: Read environment variable for UHDMovies
+const ENABLE_UHDMOVIES_PROVIDER = process.env.ENABLE_UHDMOVIES_PROVIDER !== 'false'; // Defaults to true if not set or not 'false'
+console.log(`[addon.js] UHDMovies provider fetching enabled: ${ENABLE_UHDMOVIES_PROVIDER}`);
+
+// (Removed) AnimePahe provider flag
+
+// NEW: Read environment variable for MoviesMod
+const ENABLE_MOVIESMOD_PROVIDER = process.env.ENABLE_MOVIESMOD_PROVIDER !== 'false'; // Defaults to true if not set or not 'false'
+console.log(`[addon.js] MoviesMod provider fetching enabled: ${ENABLE_MOVIESMOD_PROVIDER}`);
+
 // NEW: Read environment variable for TopMovies
-const ENABLE_TOPMOVIES_PROVIDER = process.env.ENABLE_TOPMOVIES_PROVIDER !== 'false'; // Defaults to true
+const ENABLE_TOPMOVIES_PROVIDER = process.env.ENABLE_TOPMOVIES_PROVIDER !== 'false'; // Defaults to true if not set or not 'false'
 console.log(`[addon.js] TopMovies provider fetching enabled: ${ENABLE_TOPMOVIES_PROVIDER}`);
 
+// NEW: Read environment variable for VidSrc
+const ENABLE_VIDSRC_PROVIDER = process.env.ENABLE_VIDSRC_PROVIDER !== 'false';
+console.log(`[addon.js] VidSrc provider fetching enabled: ${ENABLE_VIDSRC_PROVIDER}`);
+
+// NEW: Read environment variable for Vixsrc
+const ENABLE_VIXSRC_PROVIDER = process.env.ENABLE_VIXSRC_PROVIDER !== 'false';
+console.log(`[addon.js] Vixsrc provider fetching enabled: ${ENABLE_VIXSRC_PROVIDER}`);
+
+// NEW: Read environment variable for SoaperTV
+const ENABLE_SOAPERTV_PROVIDER = process.env.ENABLE_SOAPERTV_PROVIDER !== 'false'; // Defaults to true
+console.log(`[addon.js] SoaperTV provider fetching enabled: ${ENABLE_SOAPERTV_PROVIDER}`);
+
 const USE_EXTERNAL_PROVIDERS = process.env.USE_EXTERNAL_PROVIDERS === 'true';
+const EXTERNAL_UHDMOVIES_URL = USE_EXTERNAL_PROVIDERS ? process.env.EXTERNAL_UHDMOVIES_URL : null;
 const EXTERNAL_TOPMOVIES_URL = USE_EXTERNAL_PROVIDERS ? process.env.EXTERNAL_TOPMOVIES_URL : null;
+const EXTERNAL_MOVIESMOD_URL = USE_EXTERNAL_PROVIDERS ? process.env.EXTERNAL_MOVIESMOD_URL : null;
 
 console.log(`[addon.js] External providers: ${USE_EXTERNAL_PROVIDERS ? 'enabled' : 'disabled'}`);
 if (USE_EXTERNAL_PROVIDERS) {
+    console.log(`[addon.js] External UHDMovies URL: ${EXTERNAL_UHDMOVIES_URL || 'Not configured (using local)'}`);
+    // (Removed) External DramaDrip URL log
     console.log(`[addon.js] External TopMovies URL: ${EXTERNAL_TOPMOVIES_URL || 'Not configured (using local)'}`);
+    console.log(`[addon.js] External MoviesMod URL: ${EXTERNAL_MOVIESMOD_URL || 'Not configured (using local)'}`);
 } else {
     console.log(`[addon.js] All providers will use local implementations`);
 }
@@ -120,26 +174,65 @@ const ENABLE_STREAM_CACHE = process.env.DISABLE_STREAM_CACHE !== 'true'; // Enab
 console.log(`[addon.js] Stream links caching ${ENABLE_STREAM_CACHE ? 'enabled' : 'disabled'}`);
 console.log(`[addon.js] Redis caching ${redis ? 'available' : 'not available'}`);
 
-const { getStreamContent } = require('./providers/vidsrcextractor.js');
-const { getTopMoviesStreams } = require('./providers/topmovies.js');
+const { getSoaperTvStreams } = require('./providers/soapertv.js'); // Import from soapertv.js
+const { getStreamContent } = require('./providers/vidsrcextractor.js'); // Import from vidsrcextractor.js
+const { getVidZeeStreams } = require('./providers/VidZee.js'); // NEW: Import from VidZee.js
+const { getMP4HydraStreams } = require('./providers/MP4Hydra.js'); // NEW: Import from MP4Hydra.js
+const { getUHDMoviesStreams } = require('./providers/uhdmovies.js'); // NEW: Import from uhdmovies.js
+const { getMoviesModStreams } = require('./providers/moviesmod.js'); // NEW: Import from moviesmod.js
+const { getTopMoviesStreams } = require('./providers/topmovies.js'); // NEW: Import from topmovies.js
+// NEW: Read environment variable for MoviesDrive
+const ENABLE_MOVIESDRIVE_PROVIDER = process.env.ENABLE_MOVIESDRIVE_PROVIDER !== 'false';
+console.log(`[addon.js] MoviesDrive provider fetching enabled: ${ENABLE_MOVIESDRIVE_PROVIDER}`);
 
+const { getMoviesDriveStreams } = require('./providers/moviesdrive.js'); // NEW: Import from moviesdrive.js
 // NEW: Read environment variable for 4KHDHub
 const ENABLE_4KHDHUB_PROVIDER = process.env.ENABLE_4KHDHUB_PROVIDER !== 'false';
 console.log(`[addon.js] 4KHDHub provider fetching enabled: ${ENABLE_4KHDHUB_PROVIDER}`);
 
-const { get4KHDHubStreams } = require('./providers/4khdhub.js');
+const { get4KHDHubStreams } = require('./providers/4khdhub.js'); // NEW: Import from 4khdhub.js
+const { getVixsrcStreams } = require('./providers/vixsrc.js'); // NEW: Import from vixsrc.js
 
+// NEW: Read environment variable for MovieBox
+const ENABLE_MOVIEBOX_PROVIDER = process.env.ENABLE_MOVIEBOX_PROVIDER !== 'false';
+console.log(`[addon.js] MovieBox provider fetching enabled: ${ENABLE_MOVIEBOX_PROVIDER}`);
+
+const { getMovieBoxStreams } = require('./providers/moviebox.js'); // NEW: Import from moviebox.js
+
+// Add all missing provider enable flags
+const ENABLE_ANIMEKAI_PROVIDER = process.env.ENABLE_ANIMEKAI_PROVIDER !== 'false';
+const ENABLE_CINEVIBE_PROVIDER = process.env.ENABLE_CINEVIBE_PROVIDER !== 'false';
+const ENABLE_DAHMERMOVIES_PROVIDER = process.env.ENABLE_DAHMERMOVIES_PROVIDER !== 'false';
+const ENABLE_DVDPLAY_PROVIDER = process.env.ENABLE_DVDPLAY_PROVIDER !== 'false';
 const ENABLE_HDHUB4U_PROVIDER = process.env.ENABLE_HDHUB4U_PROVIDER !== 'false';
+const ENABLE_MALLUMV_PROVIDER = process.env.ENABLE_MALLUMV_PROVIDER !== 'false';
+const ENABLE_MAPPLE_PROVIDER = process.env.ENABLE_MAPPLE_PROVIDER !== 'false';
 const ENABLE_STREAMFLIX_PROVIDER = process.env.ENABLE_STREAMFLIX_PROVIDER !== 'false';
 const ENABLE_VIDEASY_PROVIDER = process.env.ENABLE_VIDEASY_PROVIDER !== 'false';
 const ENABLE_VIDLINK_PROVIDER = process.env.ENABLE_VIDLINK_PROVIDER !== 'false';
+const ENABLE_VIDNEST_ANIME_PROVIDER = process.env.ENABLE_VIDNEST_ANIME_PROVIDER !== 'false';
+const ENABLE_VIDNEST_PROVIDER = process.env.ENABLE_VIDNEST_PROVIDER !== 'false';
+const ENABLE_VIDROCK_PROVIDER = process.env.ENABLE_VIDROCK_PROVIDER !== 'false';
+const ENABLE_WATCH32_PROVIDER = process.env.ENABLE_WATCH32_PROVIDER !== 'false';
+const ENABLE_XPRIME_PROVIDER = process.env.ENABLE_XPRIME_PROVIDER !== 'false';
+const ENABLE_YFLIX_PROVIDER = process.env.ENABLE_YFLIX_PROVIDER !== 'false';
 
-
+const { getStreams: getAnimeKaiStreams } = require('./providers/animekai.js');
+const { getStreams: getCinevibeStreams } = require('./providers/cinevibe.js');
+const { getStreams: getDahmerMoviesStreams } = require('./providers/dahmermovies.js');
+const { getStreams: getDVDPlayStreams } = require('./providers/dvdplay.js');
 const { getStreams: getHDHub4uStreams } = require('./providers/hdhub4u.js');
+const { getStreams: getMalluMVStreams } = require('./providers/mallumv.js');
+const { getStreams: getMappleStreams } = require('./providers/mapple.js');
 const { getStreams: getStreamFlixStreams } = require('./providers/streamflix.js');
 const { getStreams: getVideasyStreams } = require('./providers/videasy.js');
 const { getStreams: getVidLinkStreams } = require('./providers/vidlink.js');
-
+const { getStreams: getVidNestAnimeStreams } = require('./providers/vidnest-anime.js');
+const { getStreams: getVidNestStreams } = require('./providers/vidnest.js');
+const { getStreams: getVidRockStreams } = require('./providers/vidrock.js');
+const { getStreams: getWatch32Streams } = require('./providers/watch32.js');
+const { getStreams: getXprimeStreams } = require('./providers/xprime.js');
+const { getStreams: getYflixStreams } = require('./providers/yflix.js');
 
 // NEW: Read environment variable for NetMirror
 const ENABLE_NETMIRROR_PROVIDER = process.env.ENABLE_NETMIRROR_PROVIDER !== 'false';
@@ -151,50 +244,11 @@ const ENABLE_CASTLE_PROVIDER = process.env.ENABLE_CASTLE_PROVIDER !== 'false';
 console.log(`[addon.js] Castle provider fetching enabled: ${ENABLE_CASTLE_PROVIDER}`);
 const { getStreams: getCastleStreams } = require('./providers/castle.js');
 
-// NEW: Read environment variable for Vadapav
-const ENABLE_VADAPAV_PROVIDER = process.env.ENABLE_VADAPAV_PROVIDER !== 'false';
-console.log(`[addon.js] Vadapav provider fetching enabled: ${ENABLE_VADAPAV_PROVIDER}`);
-const { getStreams: getVadapavStreams } = require('./providers/vadapav.js');
-
-// NEW: Read environment variable for Bollyflix
-const ENABLE_BOLLYFLIX_PROVIDER = process.env.ENABLE_BOLLYFLIX_PROVIDER !== 'false';
-console.log(`[addon.js] Bollyflix provider fetching enabled: ${ENABLE_BOLLYFLIX_PROVIDER}`);
-const { getStreams: getBollyflixStreams } = require('./providers/bollyflix.js');
-
-// NEW: Read environment variable for VegaMovies
-const ENABLE_VEGAMOVIES_PROVIDER = process.env.ENABLE_VEGAMOVIES_PROVIDER !== 'false';
-console.log(`[addon.js] VegaMovies provider fetching enabled: ${ENABLE_VEGAMOVIES_PROVIDER}`);
-const { getStreams: getVegaMoviesStreams } = require('./providers/vegamovies.js');
-
-// NEW: Read environment variable for GDIndex
-const ENABLE_GDINDEX_PROVIDER = process.env.ENABLE_GDINDEX_PROVIDER !== 'false';
-console.log(`[addon.js] GDIndex provider fetching enabled: ${ENABLE_GDINDEX_PROVIDER}`);
-const { getStreams: getGDIndexStreams } = require('./providers/gdindex.js');
-
-// NEW: Read environment variable for OnlineMoviesHindi
-const ENABLE_ONLINEMOVIESHINDI_PROVIDER = process.env.ENABLE_ONLINEMOVIESHINDI_PROVIDER !== 'false';
-console.log(`[addon.js] OnlineMoviesHindi provider fetching enabled: ${ENABLE_ONLINEMOVIESHINDI_PROVIDER}`);
-const { getStreams: getOnlineMoviesHindiStreams } = require('./providers/onlinemovieshindi.js');
-
-// NEW: Read environment variable for MoviesDrive
-const ENABLE_MOVIESDRIVE_PROVIDER = process.env.ENABLE_MOVIESDRIVE_PROVIDER !== 'false';
-console.log(`[addon.js] MoviesDrive provider fetching enabled: ${ENABLE_MOVIESDRIVE_PROVIDER}`);
-const { getStreams: getMoviesDriveStreams } = require('./providers/moviesdrive.js');
-
-// NEW: Read environment variable for MoviesMod
-const ENABLE_MOVIESMOD_PROVIDER = process.env.ENABLE_MOVIESMOD_PROVIDER !== 'false';
-console.log(`[addon.js] MoviesMod provider fetching enabled: ${ENABLE_MOVIESMOD_PROVIDER}`);
-const { getStreams: getMoviesModStreams } = require('./providers/moviesmod.js');
-
-// NEW: Read environment variable for LuxMovies
-const ENABLE_LUXMOVIES_PROVIDER = process.env.ENABLE_LUXMOVIES_PROVIDER !== 'false';
-console.log(`[addon.js] LuxMovies provider fetching enabled: ${ENABLE_LUXMOVIES_PROVIDER}`);
-const { getStreams: getLuxMoviesStreams } = require('./providers/luxmovies.js');
-
-// NEW: Read environment variable for Rogmovies
-const ENABLE_ROGMOVIES_PROVIDER = process.env.ENABLE_ROGMOVIES_PROVIDER !== 'false';
-console.log(`[addon.js] Rogmovies provider fetching enabled: ${ENABLE_ROGMOVIES_PROVIDER}`);
-const { getStreams: getRogmoviesStreams } = require('./providers/rogmovies.js');
+// NEW: Read environment variable for VFlix
+const ENABLE_VFLIX_PROVIDER = process.env.ENABLE_VFLIX_PROVIDER !== 'false';
+console.log(`[addon.js] VFlix provider fetching enabled: ${ENABLE_VFLIX_PROVIDER}`);
+const { getStreams: getVFlixStreams } = require('./providers/vflix.js');
+const axios = require('axios'); // For external provider requests
 
 // Helper function to make requests to external provider services
 async function fetchFromExternalProvider(baseUrl, providerName, tmdbId, type, season = null, episode = null) {
@@ -248,7 +302,7 @@ const RETRY_DELAY_MS = 1000;
 
 // Default to proxy/direct mode with Showbox.js
 console.log('Using proxy/direct mode with Showbox.js');
-const scraper = require('./providers/showbox.js');
+const scraper = require('./providers/Showbox.js');
 
 // Destructure the required functions from the selected scraper
 const { getStreamsFromTmdbId, convertImdbToTmdb, sortStreamsByQuality } = scraper;
@@ -1037,8 +1091,6 @@ builder.defineStreamHandler(async (args) => {
 
     // Helper for timing provider fetches
     const timeProvider = async (providerName, fetchPromise) => {
-        console.error(`[timeProvider] Starting ${providerName}`);
-        await fs.appendFile('debug_vadapav_force.txt', `[${new Date().toISOString()}] [timeProvider] Starting ${providerName}\n`).catch(() => { });
         const startTime = Date.now();
         const result = await fetchPromise;
         const endTime = Date.now();
@@ -1074,7 +1126,7 @@ builder.defineStreamHandler(async (args) => {
             // No cache or expired, fetch fresh with retry mechanism
             console.log(`[ShowBox] Fetching new streams...`);
             let lastError = null;
-            const MAX_SHOWBOX_RETRIES = 2;
+            const MAX_SHOWBOX_RETRIES = 3;
 
             // Retry logic for ShowBox
             for (let attempt = 1; attempt <= MAX_SHOWBOX_RETRIES; attempt++) {
@@ -1128,6 +1180,285 @@ builder.defineStreamHandler(async (args) => {
             // If we get here, all retries failed
             console.error(`[ShowBox] All ${MAX_SHOWBOX_RETRIES} attempts failed. Last error: ${lastError ? lastError.message : 'Unknown error'}`);
             return [];
+        },
+
+        // (Removed) Xprime provider
+
+        // (Removed) HollyMovieHD provider
+
+        // SoaperTV provider with cache integration
+        soapertv: async () => {
+            if (!ENABLE_SOAPERTV_PROVIDER) {
+                console.log('[SoaperTV] Skipping fetch: Disabled by environment variable.');
+                return [];
+            }
+            if (!shouldFetch('soapertv')) {
+                console.log('[SoaperTV] Skipping fetch: Not selected by user.');
+                return [];
+            }
+
+            // Try to get cached streams first
+            const cachedStreams = await getStreamFromCache('soapertv', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+            if (cachedStreams) {
+                console.log(`[SoaperTV] Using ${cachedStreams.length} streams from cache.`);
+                return cachedStreams.map(stream => ({ ...stream, provider: 'Soaper TV' }));
+            }
+
+            // No cache or expired, fetch fresh
+            try {
+                console.log(`[SoaperTV] Fetching new streams...`);
+                const streams = await getSoaperTvStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+
+                if (streams && streams.length > 0) {
+                    console.log(`[SoaperTV] Successfully fetched ${streams.length} streams.`);
+                    // Save to cache
+                    await saveStreamToCache('soapertv', tmdbTypeFromId, tmdbId, streams, 'ok', seasonNum, episodeNum);
+                    return streams.map(stream => ({ ...stream, provider: 'Soaper TV' }));
+                } else {
+                    console.log(`[SoaperTV] No streams returned.`);
+                    // Save empty result
+                    await saveStreamToCache('soapertv', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                    return [];
+                }
+            } catch (err) {
+                console.error(`[SoaperTV] Error fetching streams:`, err.message);
+                // Save error status to cache
+                await saveStreamToCache('soapertv', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                return [];
+            }
+        },
+
+        // (Removed) Cuevana provider
+
+        // (Removed) Hianime provider
+
+        // VidSrc provider with cache integration
+        vidsrc: async () => {
+            if (!shouldFetch('vidsrc')) {
+                console.log('[VidSrc] Skipping fetch: Not selected by user.');
+                return [];
+            }
+
+            // Try to get cached streams first
+            const cachedStreams = await getStreamFromCache('vidsrc', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+            if (cachedStreams) {
+                console.log(`[VidSrc] Using ${cachedStreams.length} streams from cache.`);
+                return cachedStreams.map(stream => ({ ...stream, provider: 'VidSrc' }));
+            }
+
+            // No cache or expired, fetch fresh
+            try {
+                console.log(`[VidSrc] Fetching new streams...`);
+                const streams = await getVidSrcStreams(
+                    id.startsWith('tt') ? id.split(':')[0] : tmdbId,
+                    tmdbTypeFromId,
+                    seasonNum,
+                    episodeNum
+                );
+
+                if (streams && streams.length > 0) {
+                    console.log(`[VidSrc] Successfully fetched ${streams.length} streams.`);
+                    // Save to cache
+                    await saveStreamToCache('vidsrc', tmdbTypeFromId, tmdbId, streams, 'ok', seasonNum, episodeNum);
+                    return streams.map(stream => ({ ...stream, provider: 'VidSrc' }));
+                } else {
+                    console.log(`[VidSrc] No streams returned.`);
+                    // Save empty result
+                    await saveStreamToCache('vidsrc', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                    return [];
+                }
+            } catch (err) {
+                console.error(`[VidSrc] Error fetching streams:`, err.message);
+                // Save error status to cache
+                await saveStreamToCache('vidsrc', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                return [];
+            }
+        },
+
+        // VidZee provider with cache integration
+        vidzee: async () => {
+            if (!ENABLE_VIDZEE_PROVIDER) { // Check if VidZee is globally disabled
+                console.log('[VidZee] Skipping fetch: Disabled by environment variable.');
+                return [];
+            }
+            if (!shouldFetch('vidzee')) {
+                console.log('[VidZee] Skipping fetch: Not selected by user.');
+                return [];
+            }
+
+            // Try to get cached streams first
+            const cachedStreams = await getStreamFromCache('vidzee', tmdbTypeFromId, tmdbId, seasonNum, episodeNum, null, null);
+            if (cachedStreams) {
+                console.log(`[VidZee] Using ${cachedStreams.length} streams from cache.`);
+                return cachedStreams.map(stream => ({ ...stream, provider: 'VidZee' }));
+            }
+
+            // No cache or expired, fetch fresh
+            try {
+                console.log(`[VidZee] Fetching new streams...`);
+                const streams = await getVidZeeStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+
+                if (streams && streams.length > 0) {
+                    console.log(`[VidZee] Successfully fetched ${streams.length} streams.`);
+                    // Save to cache
+                    await saveStreamToCache('vidzee', tmdbTypeFromId, tmdbId, streams, 'ok', seasonNum, episodeNum, null, null);
+                    return streams.map(stream => ({ ...stream, provider: 'VidZee' }));
+                } else {
+                    console.log(`[VidZee] No streams returned.`);
+                    // Save empty result
+                    await saveStreamToCache('vidzee', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum, null, null);
+                    return [];
+                }
+            } catch (err) {
+                console.error(`[VidZee] Error fetching streams:`, err.message);
+                // Save error status to cache
+                await saveStreamToCache('vidzee', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum, null, null);
+                return [];
+            }
+        },
+
+        // MP4Hydra provider with cache integration
+        mp4hydra: async () => {
+            if (!ENABLE_MP4HYDRA_PROVIDER) { // Check if MP4Hydra is disabled
+                console.log('[MP4Hydra] Skipping fetch: Disabled by environment variable.');
+                return [];
+            }
+            if (!shouldFetch('mp4hydra')) {
+                console.log('[MP4Hydra] Skipping fetch: Not selected by user.');
+                return [];
+            }
+
+            // Try to get cached streams first
+            const cachedStreams = await getStreamFromCache('mp4hydra', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+            if (cachedStreams) {
+                console.log(`[MP4Hydra] Using ${cachedStreams.length} streams from cache.`);
+                return cachedStreams.map(stream => ({ ...stream, provider: 'MP4Hydra' }));
+            }
+
+            // No cache or expired, fetch fresh
+            try {
+                console.log(`[MP4Hydra] Fetching new streams...`);
+                const streams = await getMP4HydraStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+
+                if (streams && streams.length > 0) {
+                    console.log(`[MP4Hydra] Successfully fetched ${streams.length} streams.`);
+                    // Save to cache
+                    await saveStreamToCache('mp4hydra', tmdbTypeFromId, tmdbId, streams, 'ok', seasonNum, episodeNum);
+                    return streams.map(stream => ({ ...stream, provider: 'MP4Hydra' }));
+                } else {
+                    console.log(`[MP4Hydra] No streams returned.`);
+                    // Save empty result
+                    await saveStreamToCache('mp4hydra', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                    return [];
+                }
+            } catch (err) {
+                console.error(`[MP4Hydra] Error fetching streams:`, err.message);
+                // Save error status to cache
+                await saveStreamToCache('mp4hydra', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                return [];
+            }
+        },
+
+        // UHDMovies provider with cache integration
+        uhdmovies: async () => {
+            if (!ENABLE_UHDMOVIES_PROVIDER) {
+                console.log('[UHDMovies] Skipping fetch: Disabled by environment variable.');
+                return [];
+            }
+            if (!shouldFetch('uhdmovies')) {
+                console.log('[UHDMovies] Skipping fetch: Not selected by user.');
+                return [];
+            }
+
+            // Try to get cached streams first
+            const cachedStreams = await getStreamFromCache('uhdmovies', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+            if (cachedStreams) {
+                console.log(`[UHDMovies] Using ${cachedStreams.length} streams from cache.`);
+                return cachedStreams.map(stream => ({ ...stream, provider: 'UHDMovies' }));
+            }
+
+            // No cache or expired, fetch fresh
+            try {
+                console.log(`[UHDMovies] Fetching new streams...`);
+                let streams;
+
+                // Check if external service URL is configured
+                if (EXTERNAL_UHDMOVIES_URL) {
+                    console.log(`[UHDMovies] Using external service: ${EXTERNAL_UHDMOVIES_URL}`);
+                    streams = await fetchFromExternalProvider(EXTERNAL_UHDMOVIES_URL, 'uhdmovies', tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                } else {
+                    console.log(`[UHDMovies] Using local provider`);
+                    streams = await getUHDMoviesStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                }
+
+                if (streams && streams.length > 0) {
+                    console.log(`[UHDMovies] Successfully fetched ${streams.length} streams.`);
+                    // Save to cache
+                    await saveStreamToCache('uhdmovies', tmdbTypeFromId, tmdbId, streams, 'ok', seasonNum, episodeNum);
+                    return streams.map(stream => ({ ...stream, provider: 'UHDMovies' }));
+                } else {
+                    console.log(`[UHDMovies] No streams returned.`);
+                    // Save empty result
+                    await saveStreamToCache('uhdmovies', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                    return [];
+                }
+            } catch (err) {
+                console.error(`[UHDMovies] Error fetching streams:`, err.message);
+                // Save error status to cache
+                await saveStreamToCache('uhdmovies', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                return [];
+            }
+        },
+
+        // MoviesMod provider with cache integration
+        moviesmod: async () => {
+            if (!ENABLE_MOVIESMOD_PROVIDER) {
+                console.log('[MoviesMod] Skipping fetch: Disabled by environment variable.');
+                return [];
+            }
+            if (!shouldFetch('moviesmod')) {
+                console.log('[MoviesMod] Skipping fetch: Not selected by user.');
+                return [];
+            }
+
+            // Try to get cached streams first
+            const cachedStreams = await getStreamFromCache('moviesmod', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+            if (cachedStreams) {
+                console.log(`[MoviesMod] Using ${cachedStreams.length} streams from cache.`);
+                return cachedStreams.map(stream => ({ ...stream, provider: 'MoviesMod' }));
+            }
+
+            // No cache or expired, fetch fresh
+            try {
+                console.log(`[MoviesMod] Fetching new streams...`);
+                let streams;
+
+                // Check if external service URL is configured
+                if (EXTERNAL_MOVIESMOD_URL) {
+                    console.log(`[MoviesMod] Using external service: ${EXTERNAL_MOVIESMOD_URL}`);
+                    streams = await fetchFromExternalProvider(EXTERNAL_MOVIESMOD_URL, 'moviesmod', tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                } else {
+                    console.log(`[MoviesMod] Using local provider`);
+                    streams = await getMoviesModStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                }
+
+                if (streams && streams.length > 0) {
+                    console.log(`[MoviesMod] Successfully fetched ${streams.length} streams.`);
+                    // Save to cache
+                    await saveStreamToCache('moviesmod', tmdbTypeFromId, tmdbId, streams, 'ok', seasonNum, episodeNum);
+                    return streams.map(stream => ({ ...stream, provider: 'MoviesMod' }));
+                } else {
+                    console.log(`[MoviesMod] No streams returned.`);
+                    // Save empty result
+                    await saveStreamToCache('moviesmod', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                    return [];
+                }
+            } catch (err) {
+                console.error(`[MoviesMod] Error fetching streams:`, err.message);
+                // Save error status to cache
+                await saveStreamToCache('moviesmod', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                return [];
+            }
         },
 
         // TopMovies provider with cache integration
@@ -1187,6 +1518,52 @@ builder.defineStreamHandler(async (args) => {
             }
         },
 
+        // (Removed) DramaDrip provider
+
+        // (Removed) AnimePahe provider
+
+        // MoviesDrive provider with cache integration
+        moviesdrive: async () => {
+            if (!ENABLE_MOVIESDRIVE_PROVIDER) {
+                console.log('[MoviesDrive] Skipping fetch: Disabled by environment variable.');
+                return [];
+            }
+            if (!shouldFetch('moviesdrive')) {
+                console.log('[MoviesDrive] Skipping fetch: Not selected by user.');
+                return [];
+            }
+
+            // Try to get cached streams first
+            const cachedStreams = await getStreamFromCache('moviesdrive', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+            if (cachedStreams) {
+                console.log(`[MoviesDrive] Using ${cachedStreams.length} streams from cache.`);
+                return cachedStreams.map(stream => ({ ...stream, provider: 'MoviesDrive' }));
+            }
+
+            // No cache or expired, fetch fresh
+            try {
+                console.log(`[MoviesDrive] Fetching new streams...`);
+                const streams = await getMoviesDriveStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+
+                if (streams && streams.length > 0) {
+                    console.log(`[MoviesDrive] Successfully fetched ${streams.length} streams.`);
+                    // Save to cache
+                    await saveStreamToCache('moviesdrive', tmdbTypeFromId, tmdbId, streams, 'ok', seasonNum, episodeNum);
+                    return streams.map(stream => ({ ...stream, provider: 'MoviesDrive' }));
+                } else {
+                    console.log(`[MoviesDrive] No streams returned.`);
+                    // Save empty result
+                    await saveStreamToCache('moviesdrive', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                    return [];
+                }
+            } catch (err) {
+                console.error(`[MoviesDrive] Error fetching streams:`, err.message);
+                // Save error status to cache
+                await saveStreamToCache('moviesdrive', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                return [];
+            }
+        },
+
         // 4KHDHub provider with cache integration
         '4khdhub': async () => {
             if (!ENABLE_4KHDHUB_PROVIDER) {
@@ -1229,6 +1606,163 @@ builder.defineStreamHandler(async (args) => {
             }
         },
 
+        // Vixsrc provider with cache integration
+        vixsrc: async () => {
+            if (!ENABLE_VIXSRC_PROVIDER) {
+                console.log('[Vixsrc] Skipping fetch: Disabled by environment variable.');
+                return [];
+            }
+            if (!shouldFetch('vixsrc')) {
+                console.log('[Vixsrc] Skipping fetch: Not selected by user.');
+                return [];
+            }
+
+            // Try to get cached streams first
+            const cachedStreams = await getStreamFromCache('vixsrc', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+            if (cachedStreams) {
+                console.log(`[Vixsrc] Using ${cachedStreams.length} streams from cache.`);
+                return cachedStreams.map(stream => ({ ...stream, provider: 'Vixsrc' }));
+            }
+
+            // No cache or expired, fetch fresh
+            try {
+                console.log(`[Vixsrc] Fetching new streams...`);
+                const streams = await getVixsrcStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+
+                if (streams && streams.length > 0) {
+                    console.log(`[Vixsrc] Successfully fetched ${streams.length} streams.`);
+                    // Save to cache
+                    await saveStreamToCache('vixsrc', tmdbTypeFromId, tmdbId, streams, 'ok', seasonNum, episodeNum);
+                    return streams.map(stream => ({ ...stream, provider: 'Vixsrc' }));
+                } else {
+                    console.log(`[Vixsrc] No streams returned.`);
+                    // Save empty result
+                    await saveStreamToCache('vixsrc', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                    return [];
+                }
+            } catch (err) {
+                console.error(`[Vixsrc] Error fetching streams:`, err.message);
+                // Save error status to cache
+                await saveStreamToCache('vixsrc', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                return [];
+            }
+        },
+
+        // MovieBox provider with cache integration
+        moviebox: async () => {
+            if (!ENABLE_MOVIEBOX_PROVIDER) {
+                console.log('[MovieBox] Skipping fetch: Disabled by environment variable.');
+                return [];
+            }
+            if (!shouldFetch('moviebox')) {
+                console.log('[MovieBox] Skipping fetch: Not selected by user.');
+                return [];
+            }
+
+            // Try to get cached streams first
+            const cachedStreams = await getStreamFromCache('moviebox', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+            if (cachedStreams) {
+                console.log(`[MovieBox] Using ${cachedStreams.length} streams from cache.`);
+                return cachedStreams.map(stream => ({ ...stream, provider: 'MovieBox' }));
+            }
+
+            // No cache or expired, fetch fresh
+            try {
+                console.log(`[MovieBox] Fetching new streams...`);
+                const streams = await getMovieBoxStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+
+                if (streams && streams.length > 0) {
+                    console.log(`[MovieBox] Successfully fetched ${streams.length} streams.`);
+                    // Save to cache
+                    await saveStreamToCache('moviebox', tmdbTypeFromId, tmdbId, streams, 'ok', seasonNum, episodeNum);
+                    return streams.map(stream => ({ ...stream, provider: 'MovieBox' }));
+                } else {
+                    console.log(`[MovieBox] No streams returned.`);
+                    // Save empty result
+                    await saveStreamToCache('moviebox', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                    return [];
+                }
+            } catch (err) {
+                console.error(`[MovieBox] Error fetching streams:`, err.message);
+                // Save error status to cache
+                await saveStreamToCache('moviebox', tmdbTypeFromId, tmdbId, [], 'failed', seasonNum, episodeNum);
+                return [];
+            }
+        },
+
+        // AnimeKai provider
+        animekai: async () => {
+            if (!ENABLE_ANIMEKAI_PROVIDER) return [];
+            if (!shouldFetch('animekai')) return [];
+            try {
+                const cached = await getStreamFromCache('animekai', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'AnimeKai' }));
+
+                console.log(`[AnimeKai] Fetching new streams...`);
+                const streams = await getAnimeKaiStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('animekai', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'AnimeKai' }));
+            } catch (err) {
+                console.error(`[AnimeKai] Error:`, err.message);
+                return [];
+            }
+        },
+
+        // Cinevibe provider
+        cinevibe: async () => {
+            if (!ENABLE_CINEVIBE_PROVIDER) return [];
+            if (!shouldFetch('cinevibe')) return [];
+            try {
+                const cached = await getStreamFromCache('cinevibe', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'Cinevibe' }));
+
+                console.log(`[Cinevibe] Fetching new streams...`);
+                const streams = await getCinevibeStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('cinevibe', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'Cinevibe' }));
+            } catch (err) {
+                console.error(`[Cinevibe] Error:`, err.message);
+                return [];
+            }
+        },
+
+        // DahmerMovies provider
+        dahmermovies: async () => {
+            if (!ENABLE_DAHMERMOVIES_PROVIDER) return [];
+            if (!shouldFetch('dahmermovies')) return [];
+            try {
+                const cached = await getStreamFromCache('dahmermovies', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'DahmerMovies' }));
+
+                console.log(`[DahmerMovies] Fetching new streams...`);
+                const streams = await getDahmerMoviesStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('dahmermovies', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'DahmerMovies' }));
+            } catch (err) {
+                console.error(`[DahmerMovies] Error:`, err.message);
+                return [];
+            }
+        },
+
+        // DVDPlay provider
+        dvdplay: async () => {
+            if (!ENABLE_DVDPLAY_PROVIDER) return [];
+            if (!shouldFetch('dvdplay')) return [];
+            try {
+                const cached = await getStreamFromCache('dvdplay', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'DVDPlay' }));
+
+                console.log(`[DVDPlay] Fetching new streams...`);
+                const streams = await getDVDPlayStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('dvdplay', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'DVDPlay' }));
+            } catch (err) {
+                console.error(`[DVDPlay] Error:`, err.message);
+                return [];
+            }
+        },
+
+        // HDHub4u provider
         // HDHub4u provider
         hdhub4u: async () => {
             if (!ENABLE_HDHUB4U_PROVIDER) return [];
@@ -1243,6 +1777,42 @@ builder.defineStreamHandler(async (args) => {
                 return (streams || []).map(s => ({ ...s, provider: 'HDHub4u' }));
             } catch (err) {
                 console.error(`[HDHub4u] Error:`, err.message);
+                return [];
+            }
+        },
+
+        // MalluMV provider
+        mallumv: async () => {
+            if (!ENABLE_MALLUMV_PROVIDER) return [];
+            if (!shouldFetch('mallumv')) return [];
+            try {
+                const cached = await getStreamFromCache('mallumv', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'MalluMV' }));
+
+                console.log(`[MalluMV] Fetching new streams...`);
+                const streams = await getMalluMVStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('mallumv', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'MalluMV' }));
+            } catch (err) {
+                console.error(`[MalluMV] Error:`, err.message);
+                return [];
+            }
+        },
+
+        // Mapple provider
+        mapple: async () => {
+            if (!ENABLE_MAPPLE_PROVIDER) return [];
+            if (!shouldFetch('mapple')) return [];
+            try {
+                const cached = await getStreamFromCache('mapple', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'Mapple' }));
+
+                console.log(`[Mapple] Fetching new streams...`);
+                const streams = await getMappleStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('mapple', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'Mapple' }));
+            } catch (err) {
+                console.error(`[Mapple] Error:`, err.message);
                 return [];
             }
         },
@@ -1301,6 +1871,114 @@ builder.defineStreamHandler(async (args) => {
             }
         },
 
+        // VidNest Anime provider
+        'vidnest-anime': async () => {
+            if (!ENABLE_VIDNEST_ANIME_PROVIDER) return [];
+            if (!shouldFetch('vidnest-anime')) return [];
+            try {
+                const cached = await getStreamFromCache('vidnest-anime', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'VidNestAnime' }));
+
+                console.log(`[VidNestAnime] Fetching new streams...`);
+                const streams = await getVidNestAnimeStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('vidnest-anime', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'VidNestAnime' }));
+            } catch (err) {
+                console.error(`[VidNestAnime] Error:`, err.message);
+                return [];
+            }
+        },
+
+        // VidNest provider
+        vidnest: async () => {
+            if (!ENABLE_VIDNEST_PROVIDER) return [];
+            if (!shouldFetch('vidnest')) return [];
+            try {
+                const cached = await getStreamFromCache('vidnest', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'VidNest' }));
+
+                console.log(`[VidNest] Fetching new streams...`);
+                const streams = await getVidNestStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('vidnest', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'VidNest' }));
+            } catch (err) {
+                console.error(`[VidNest] Error:`, err.message);
+                return [];
+            }
+        },
+
+        // VidRock provider
+        vidrock: async () => {
+            if (!ENABLE_VIDROCK_PROVIDER) return [];
+            if (!shouldFetch('vidrock')) return [];
+            try {
+                const cached = await getStreamFromCache('vidrock', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'VidRock' }));
+
+                console.log(`[VidRock] Fetching new streams...`);
+                const streams = await getVidRockStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('vidrock', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'VidRock' }));
+            } catch (err) {
+                console.error(`[VidRock] Error:`, err.message);
+                return [];
+            }
+        },
+
+        // Watch32 provider
+        watch32: async () => {
+            if (!ENABLE_WATCH32_PROVIDER) return [];
+            if (!shouldFetch('watch32')) return [];
+            try {
+                const cached = await getStreamFromCache('watch32', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'Watch32' }));
+
+                console.log(`[Watch32] Fetching new streams...`);
+                const streams = await getWatch32Streams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('watch32', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'Watch32' }));
+            } catch (err) {
+                console.error(`[Watch32] Error:`, err.message);
+                return [];
+            }
+        },
+
+        // Xprime provider
+        xprime: async () => {
+            if (!ENABLE_XPRIME_PROVIDER) return [];
+            if (!shouldFetch('xprime')) return [];
+            try {
+                const cached = await getStreamFromCache('xprime', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'Xprime' }));
+
+                console.log(`[Xprime] Fetching new streams...`);
+                const streams = await getXprimeStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('xprime', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'Xprime' }));
+            } catch (err) {
+                console.error(`[Xprime] Error:`, err.message);
+                return [];
+            }
+        },
+
+        // Yflix provider
+        yflix: async () => {
+            if (!ENABLE_YFLIX_PROVIDER) return [];
+            if (!shouldFetch('yflix')) return [];
+            try {
+                const cached = await getStreamFromCache('yflix', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'Yflix' }));
+
+                console.log(`[Yflix] Fetching new streams...`);
+                const streams = await getYflixStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('yflix', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'Yflix' }));
+            } catch (err) {
+                console.error(`[Yflix] Error:`, err.message);
+                return [];
+            }
+        },
+
         // NetMirror provider
         netmirror: async () => {
             if (!ENABLE_NETMIRROR_PROVIDER) return [];
@@ -1337,102 +2015,66 @@ builder.defineStreamHandler(async (args) => {
             }
         },
 
-        // Vadapav provider
-        vadapav: async () => {
-            console.error('[Vadapav] Function called!');
+        // VFlix provider
+        vflix: async () => {
+            if (!ENABLE_VFLIX_PROVIDER) return [];
+            if (!shouldFetch('vflix')) return [];
             try {
-                fsSync.appendFileSync('debug_vadapav_force.txt', `[${new Date().toISOString()}] [Vadapav] Function called!\n`);
-            } catch (e) { console.error('Logging failed', e); }
+                const cached = await getStreamFromCache('vflix', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
+                if (cached) return cached.map(s => ({ ...s, provider: 'VFlix' }));
 
-            try {
-                await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Vadapav provider called. Type: ${tmdbTypeFromId}, ID: ${id}\n`);
-
-                // const cached = await getStreamFromCache('vadapav', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
-                // if (cached) {
-                //     await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Cache hit: ${cached.length} streams\n`);
-                //     return cached.map(s => ({ ...s, provider: 'Vadapav' }));
-                // }
-                console.log('[Vadapav] Cache disabled for debugging.');
-
-                console.log(`[Vadapav] Fetching new streams...`);
-                await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Fetching new streams...\n`);
-
-                let imdbIdForProvider = null;
-                if (id.startsWith('tt')) {
-                    imdbIdForProvider = id.split(':')[0];
-                }
-
-                if (!imdbIdForProvider && id.startsWith('tt')) imdbIdForProvider = id.split(':')[0];
-
-                if (!imdbIdForProvider) {
-                    console.log('[Vadapav] Skipping: No IMDb ID available.');
-                    await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Skipping: No IMDb ID\n`);
-                    return [];
-                }
-
-                await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Calling getVadapavStreams with ${imdbIdForProvider}\n`);
-                const streams = await getVadapavStreams(tmdbTypeFromId, imdbIdForProvider, seasonNum, episodeNum);
-                await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Result: ${streams ? streams.length : 'null'} streams\n`);
-
-                await saveStreamToCache('vadapav', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
-                return (streams || []).map(s => ({ ...s, provider: 'Vadapav' }));
+                console.log(`[VFlix] Fetching new streams...`);
+                const streams = await getVFlixStreams(tmdbId, tmdbTypeFromId, seasonNum, episodeNum);
+                await saveStreamToCache('vflix', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
+                return (streams || []).map(s => ({ ...s, provider: 'VFlix' }));
             } catch (err) {
-                console.error(`[Vadapav] Error:`, err.message);
-                await fs.appendFile('debug_vadapav.txt', `[${new Date().toISOString()}] Error: ${err.message}\n`);
+                console.error(`[VFlix] Error:`, err.message);
                 return [];
             }
-        },
-
-        // Bollyflix provider
-        bollyflix: async () => {
-            if (!ENABLE_BOLLYFLIX_PROVIDER) return [];
-            if (!shouldFetch('bollyflix')) return [];
-            try {
-                const cached = await getStreamFromCache('bollyflix', tmdbTypeFromId, tmdbId, seasonNum, episodeNum);
-                if (cached) return cached.map(s => ({ ...s, provider: 'Bollyflix' }));
-
-                console.log(`[Bollyflix] Fetching new streams...`);
-                const streams = await getBollyflixStreams(tmdbTypeFromId, id, seasonNum, episodeNum);
-                await saveStreamToCache('bollyflix', tmdbTypeFromId, tmdbId, streams || [], streams && streams.length > 0 ? 'ok' : 'failed', seasonNum, episodeNum);
-                return (streams || []).map(s => ({ ...s, provider: 'Bollyflix' }));
-            } catch (err) {
-                console.error(`[Bollyflix] Error:`, err.message);
-                return [];
-            }
-        },
-
+        }
     };
 
     // Execute all provider fetches in parallel
     console.log('Running parallel provider fetches with caching...');
 
     try {
-        // Execute all provider functions in parallel with 12-second timeout
-        const PROVIDER_TIMEOUT_MS = 12000; // 12 seconds
+        // Execute all provider functions in parallel with 15-second timeout
+        const PROVIDER_TIMEOUT_MS = 15000; // 15 seconds
         const providerPromises = [
             timeProvider('ShowBox', providerFetchFunctions.showbox()),
+            timeProvider('Soaper TV', providerFetchFunctions.soapertv()),
+            timeProvider('VidSrc', providerFetchFunctions.vidsrc()),
+            timeProvider('VidZee', providerFetchFunctions.vidzee()),
+            timeProvider('MP4Hydra', providerFetchFunctions.mp4hydra()),
+            timeProvider('UHDMovies', providerFetchFunctions.uhdmovies()),
+            timeProvider('MoviesMod', providerFetchFunctions.moviesmod()),
             timeProvider('TopMovies', providerFetchFunctions.topmovies()),
+            timeProvider('MoviesDrive', providerFetchFunctions.moviesdrive()),
             timeProvider('4KHDHub', providerFetchFunctions['4khdhub']()),
+            timeProvider('Vixsrc', providerFetchFunctions.vixsrc()),
+            timeProvider('MovieBox', providerFetchFunctions.moviebox()),
+            timeProvider('AnimeKai', providerFetchFunctions.animekai()),
+            timeProvider('Cinevibe', providerFetchFunctions.cinevibe()),
+            timeProvider('DahmerMovies', providerFetchFunctions.dahmermovies()),
+            timeProvider('DVDPlay', providerFetchFunctions.dvdplay()),
             timeProvider('HDHub4u', providerFetchFunctions.hdhub4u()),
+            timeProvider('MalluMV', providerFetchFunctions.mallumv()),
+            timeProvider('Mapple', providerFetchFunctions.mapple()),
             timeProvider('StreamFlix', providerFetchFunctions.streamflix()),
             timeProvider('Videasy', providerFetchFunctions.videasy()),
             timeProvider('VidLink', providerFetchFunctions.vidlink()),
+            timeProvider('VidNestAnime', providerFetchFunctions['vidnest-anime']()),
+            timeProvider('VidNest', providerFetchFunctions.vidnest()),
+            timeProvider('VidRock', providerFetchFunctions.vidrock()),
+            timeProvider('Watch32', providerFetchFunctions.watch32()),
+            timeProvider('Xprime', providerFetchFunctions.xprime()),
+            timeProvider('Yflix', providerFetchFunctions.yflix()),
             timeProvider('NetMirror', providerFetchFunctions.netmirror()),
             timeProvider('Castle', providerFetchFunctions.castle()),
-            timeProvider('Vadapav', providerFetchFunctions.vadapav()),
-            timeProvider('Bollyflix', providerFetchFunctions.bollyflix()),
-            // COMMENTED OUT: These providers are not yet implemented
-            // timeProvider('VegaMovies', providerFetchFunctions.vegamovies()),
-            // timeProvider('GDIndex', providerFetchFunctions.gdindex()),
-            // timeProvider('OnlineMoviesHindi', providerFetchFunctions.onlinemovieshindi()),
-            // timeProvider('MoviesDrive', providerFetchFunctions.moviesdrive()),
-            // timeProvider('MoviesMod', providerFetchFunctions.moviesmod()),
-            // timeProvider('LuxMovies', providerFetchFunctions.luxmovies()),
-            // timeProvider('Rogmovies', providerFetchFunctions.rogmovies()),
-
+            timeProvider('VFlix', providerFetchFunctions.vflix())
         ];
 
-        // Implement proper timeout that returns results immediately after 15 seconds
+        // Implement proper timeout that returns results immediately after 10 seconds
         let providerResults;
         let timeoutOccurred = false;
 
@@ -1461,7 +2103,7 @@ builder.defineStreamHandler(async (args) => {
             ));
 
             providerResults = currentResults.map((result, index) => {
-                const providerNames = ['ShowBox', 'TopMovies', '4KHDHub', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink', 'NetMirror', 'Castle', 'Vadapav', 'Bollyflix', 'VegaMovies', 'GDIndex', 'OnlineMoviesHindi', 'MoviesDrive', 'MoviesMod', 'LuxMovies', 'Rogmovies'];
+                const providerNames = ['ShowBox', 'Soaper TV', 'VidSrc', 'VidZee', 'MP4Hydra', 'UHDMovies', 'MoviesMod', 'TopMovies', 'MoviesDrive', '4KHDHub', 'Vixsrc', 'MovieBox', 'AnimeKai', 'Cinevibe', 'DahmerMovies', 'DVDPlay', 'HDHub4u', 'MalluMV', 'Mapple', 'StreamFlix', 'Videasy', 'VidLink', 'VidNestAnime', 'VidNest', 'VidRock', 'Watch32', 'Xprime', 'Yflix', 'NetMirror', 'Castle', 'VFlix'];
                 if (result.status === 'fulfilled' && Array.isArray(result.value) && result.value.length > 0) {
                     console.log(`[Timeout] Provider ${providerNames[index]} completed with ${result.value.length} streams.`);
                     return result.value;
@@ -1484,25 +2126,36 @@ builder.defineStreamHandler(async (args) => {
         // Process results into streamsByProvider object
         const streamsByProvider = {
             'ShowBox': shouldFetch('showbox') ? applyAllStreamFilters(providerResults[0], 'ShowBox', minQualitiesPreferences.showbox, excludeCodecsPreferences.showbox) : [],
-            'TopMovies': ENABLE_TOPMOVIES_PROVIDER && shouldFetch('topmovies') ? applyAllStreamFilters(providerResults[1], 'TopMovies', minQualitiesPreferences.topmovies, excludeCodecsPreferences.topmovies) : [],
-            '4KHDHub': ENABLE_4KHDHUB_PROVIDER && shouldFetch('4khdhub') ? applyAllStreamFilters(providerResults[2], '4KHDHub', minQualitiesPreferences['4khdhub'], excludeCodecsPreferences['4khdhub']) : [],
-            'HDHub4u': ENABLE_HDHUB4U_PROVIDER && shouldFetch('hdhub4u') ? applyAllStreamFilters(providerResults[3], 'HDHub4u', minQualitiesPreferences.hdhub4u, excludeCodecsPreferences.hdhub4u) : [],
-            'StreamFlix': ENABLE_STREAMFLIX_PROVIDER && shouldFetch('streamflix') ? applyAllStreamFilters(providerResults[4], 'StreamFlix', minQualitiesPreferences.streamflix, excludeCodecsPreferences.streamflix) : [],
-            'Videasy': ENABLE_VIDEASY_PROVIDER && shouldFetch('videasy') ? applyAllStreamFilters(providerResults[5], 'Videasy', minQualitiesPreferences.videasy, excludeCodecsPreferences.videasy) : [],
-            'VidLink': ENABLE_VIDLINK_PROVIDER && shouldFetch('vidlink') ? applyAllStreamFilters(providerResults[6], 'VidLink', minQualitiesPreferences.vidlink, excludeCodecsPreferences.vidlink) : [],
-            'NetMirror': ENABLE_NETMIRROR_PROVIDER && shouldFetch('netmirror') ? applyAllStreamFilters(providerResults[7], 'NetMirror', minQualitiesPreferences.netmirror, excludeCodecsPreferences.netmirror) : [],
-            'Castle': ENABLE_CASTLE_PROVIDER && shouldFetch('castle') ? applyAllStreamFilters(providerResults[8], 'Castle', minQualitiesPreferences.castle, excludeCodecsPreferences.castle) : [],
-            'Vadapav': shouldFetch('vadapav') ? applyAllStreamFilters(providerResults[9], 'Vadapav', minQualitiesPreferences.vadapav, excludeCodecsPreferences.vadapav) : [],
-            'Bollyflix': shouldFetch('bollyflix') ? applyAllStreamFilters(providerResults[10], 'Bollyflix', minQualitiesPreferences.bollyflix, excludeCodecsPreferences.bollyflix) : [],
-            // COMMENTED OUT: These providers are not yet implemented
-            // 'VegaMovies': shouldFetch('vegamovies') ? applyAllStreamFilters(providerResults[11], 'VegaMovies', minQualitiesPreferences.vegamovies, excludeCodecsPreferences.vegamovies) : [],
-            // 'GDIndex': shouldFetch('gdindex') ? applyAllStreamFilters(providerResults[12], 'GDIndex', minQualitiesPreferences.gdindex, excludeCodecsPreferences.gdindex) : [],
-            // 'OnlineMoviesHindi': shouldFetch('onlinemovieshindi') ? applyAllStreamFilters(providerResults[13], 'OnlineMoviesHindi', minQualitiesPreferences.onlinemovieshindi, excludeCodecsPreferences.onlinemovieshindi) : [],
-            // 'MoviesDrive': shouldFetch('moviesdrive') ? applyAllStreamFilters(providerResults[14], 'MoviesDrive', minQualitiesPreferences.moviesdrive, excludeCodecsPreferences.moviesdrive) : [],
-            // 'MoviesMod': shouldFetch('moviesmod') ? applyAllStreamFilters(providerResults[15], 'MoviesMod', minQualitiesPreferences.moviesmod, excludeCodecsPreferences.moviesmod) : [],
-            // 'LuxMovies': shouldFetch('luxmovies') ? applyAllStreamFilters(providerResults[16], 'LuxMovies', minQualitiesPreferences.luxmovies, excludeCodecsPreferences.luxmovies) : [],
-            // 'Rogmovies': shouldFetch('rogmovies') ? applyAllStreamFilters(providerResults[17], 'Rogmovies', minQualitiesPreferences.rogmovies, excludeCodecsPreferences.rogmovies) : [],
-
+            'Soaper TV': ENABLE_SOAPERTV_PROVIDER && shouldFetch('soapertv') ? applyAllStreamFilters(providerResults[1], 'Soaper TV', minQualitiesPreferences.soapertv, excludeCodecsPreferences.soapertv) : [],
+            'VidSrc': ENABLE_VIDSRC_PROVIDER && shouldFetch('vidsrc') ? applyAllStreamFilters(providerResults[2], 'VidSrc', minQualitiesPreferences.vidsrc, excludeCodecsPreferences.vidsrc) : [],
+            'VidZee': ENABLE_VIDZEE_PROVIDER && shouldFetch('vidzee') ? applyAllStreamFilters(providerResults[3], 'VidZee', minQualitiesPreferences.vidzee, excludeCodecsPreferences.vidzee) : [],
+            'MP4Hydra': ENABLE_MP4HYDRA_PROVIDER && shouldFetch('mp4hydra') ? applyAllStreamFilters(providerResults[4], 'MP4Hydra', minQualitiesPreferences.mp4hydra, excludeCodecsPreferences.mp4hydra) : [],
+            'UHDMovies': ENABLE_UHDMOVIES_PROVIDER && shouldFetch('uhdmovies') ? applyAllStreamFilters(providerResults[5], 'UHDMovies', minQualitiesPreferences.uhdmovies, excludeCodecsPreferences.uhdmovies) : [],
+            'MoviesMod': ENABLE_MOVIESMOD_PROVIDER && shouldFetch('moviesmod') ? applyAllStreamFilters(providerResults[6], 'MoviesMod', minQualitiesPreferences.moviesmod, excludeCodecsPreferences.moviesmod) : [],
+            'TopMovies': ENABLE_TOPMOVIES_PROVIDER && shouldFetch('topmovies') ? applyAllStreamFilters(providerResults[7], 'TopMovies', minQualitiesPreferences.topmovies, excludeCodecsPreferences.topmovies) : [],
+            'MoviesDrive': ENABLE_MOVIESDRIVE_PROVIDER && shouldFetch('moviesdrive') ? applyAllStreamFilters(providerResults[8], 'MoviesDrive', minQualitiesPreferences.moviesdrive, excludeCodecsPreferences.moviesdrive) : [],
+            '4KHDHub': ENABLE_4KHDHUB_PROVIDER && shouldFetch('4khdhub') ? applyAllStreamFilters(providerResults[9], '4KHDHub', minQualitiesPreferences['4khdhub'], excludeCodecsPreferences['4khdhub']) : [],
+            'Vixsrc': ENABLE_VIXSRC_PROVIDER && shouldFetch('vixsrc') ? applyAllStreamFilters(providerResults[10], 'Vixsrc', minQualitiesPreferences.vixsrc, excludeCodecsPreferences.vixsrc) : [],
+            'MovieBox': ENABLE_MOVIEBOX_PROVIDER && shouldFetch('moviebox') ? applyAllStreamFilters(providerResults[11], 'MovieBox', minQualitiesPreferences.moviebox, excludeCodecsPreferences.moviebox) : [],
+            'AnimeKai': ENABLE_ANIMEKAI_PROVIDER && shouldFetch('animekai') ? applyAllStreamFilters(providerResults[12], 'AnimeKai', minQualitiesPreferences.animekai, excludeCodecsPreferences.animekai) : [],
+            'Cinevibe': ENABLE_CINEVIBE_PROVIDER && shouldFetch('cinevibe') ? applyAllStreamFilters(providerResults[13], 'Cinevibe', minQualitiesPreferences.cinevibe, excludeCodecsPreferences.cinevibe) : [],
+            'DahmerMovies': ENABLE_DAHMERMOVIES_PROVIDER && shouldFetch('dahmermovies') ? applyAllStreamFilters(providerResults[14], 'DahmerMovies', minQualitiesPreferences.dahmermovies, excludeCodecsPreferences.dahmermovies) : [],
+            'DVDPlay': ENABLE_DVDPLAY_PROVIDER && shouldFetch('dvdplay') ? applyAllStreamFilters(providerResults[15], 'DVDPlay', minQualitiesPreferences.dvdplay, excludeCodecsPreferences.dvdplay) : [],
+            'HDHub4u': ENABLE_HDHUB4U_PROVIDER && shouldFetch('hdhub4u') ? applyAllStreamFilters(providerResults[16], 'HDHub4u', minQualitiesPreferences.hdhub4u, excludeCodecsPreferences.hdhub4u) : [],
+            'MalluMV': ENABLE_MALLUMV_PROVIDER && shouldFetch('mallumv') ? applyAllStreamFilters(providerResults[17], 'MalluMV', minQualitiesPreferences.mallumv, excludeCodecsPreferences.mallumv) : [],
+            'Mapple': ENABLE_MAPPLE_PROVIDER && shouldFetch('mapple') ? applyAllStreamFilters(providerResults[18], 'Mapple', minQualitiesPreferences.mapple, excludeCodecsPreferences.mapple) : [],
+            'StreamFlix': ENABLE_STREAMFLIX_PROVIDER && shouldFetch('streamflix') ? applyAllStreamFilters(providerResults[19], 'StreamFlix', minQualitiesPreferences.streamflix, excludeCodecsPreferences.streamflix) : [],
+            'Videasy': ENABLE_VIDEASY_PROVIDER && shouldFetch('videasy') ? applyAllStreamFilters(providerResults[20], 'Videasy', minQualitiesPreferences.videasy, excludeCodecsPreferences.videasy) : [],
+            'VidLink': ENABLE_VIDLINK_PROVIDER && shouldFetch('vidlink') ? applyAllStreamFilters(providerResults[21], 'VidLink', minQualitiesPreferences.vidlink, excludeCodecsPreferences.vidlink) : [],
+            'VidNestAnime': ENABLE_VIDNEST_ANIME_PROVIDER && shouldFetch('vidnest-anime') ? applyAllStreamFilters(providerResults[22], 'VidNestAnime', minQualitiesPreferences['vidnest-anime'], excludeCodecsPreferences['vidnest-anime']) : [],
+            'VidNest': ENABLE_VIDNEST_PROVIDER && shouldFetch('vidnest') ? applyAllStreamFilters(providerResults[23], 'VidNest', minQualitiesPreferences.vidnest, excludeCodecsPreferences.vidnest) : [],
+            'VidRock': ENABLE_VIDROCK_PROVIDER && shouldFetch('vidrock') ? applyAllStreamFilters(providerResults[24], 'VidRock', minQualitiesPreferences.vidrock, excludeCodecsPreferences.vidrock) : [],
+            'Watch32': ENABLE_WATCH32_PROVIDER && shouldFetch('watch32') ? applyAllStreamFilters(providerResults[25], 'Watch32', minQualitiesPreferences.watch32, excludeCodecsPreferences.watch32) : [],
+            'Xprime': ENABLE_XPRIME_PROVIDER && shouldFetch('xprime') ? applyAllStreamFilters(providerResults[26], 'Xprime', minQualitiesPreferences.xprime, excludeCodecsPreferences.xprime) : [],
+            'Yflix': ENABLE_YFLIX_PROVIDER && shouldFetch('yflix') ? applyAllStreamFilters(providerResults[27], 'Yflix', minQualitiesPreferences.yflix, excludeCodecsPreferences.yflix) : [],
+            'NetMirror': ENABLE_NETMIRROR_PROVIDER && shouldFetch('netmirror') ? applyAllStreamFilters(providerResults[28], 'NetMirror', minQualitiesPreferences.netmirror, excludeCodecsPreferences.netmirror) : [],
+            'Castle': ENABLE_CASTLE_PROVIDER && shouldFetch('castle') ? applyAllStreamFilters(providerResults[29], 'Castle', minQualitiesPreferences.castle, excludeCodecsPreferences.castle) : [],
+            'VFlix': ENABLE_VFLIX_PROVIDER && shouldFetch('vflix') ? applyAllStreamFilters(providerResults[30], 'VFlix', minQualitiesPreferences.vflix, excludeCodecsPreferences.vflix) : []
         };
 
         // Sort streams for each provider by quality, then size
@@ -1522,7 +2175,7 @@ builder.defineStreamHandler(async (args) => {
 
         // Combine streams in the preferred provider order
         combinedRawStreams = [];
-        const providerOrder = ['ShowBox', 'NetMirror', 'Castle', 'Vadapav', 'Bollyflix', 'VegaMovies', 'GDIndex', 'OnlineMoviesHindi', 'MoviesDrive', 'MoviesMod', 'LuxMovies', 'Rogmovies', '4KHDHub', 'TopMovies', 'HDHub4u', 'StreamFlix', 'Videasy', 'VidLink'];
+        const providerOrder = ['ShowBox', 'MovieBox', 'NetMirror', 'Castle', 'VFlix', 'UHDMovies', '4KHDHub', 'MoviesMod', 'TopMovies', 'MoviesDrive', 'Soaper TV', 'VidZee', 'MP4Hydra', 'VidSrc', 'Vixsrc', 'AnimeKai', 'Cinevibe', 'DahmerMovies', 'DVDPlay', 'HDHub4u', 'MalluMV', 'Mapple', 'StreamFlix', 'Videasy', 'VidLink', 'VidNestAnime', 'VidNest', 'VidRock', 'Watch32', 'Xprime', 'Yflix'];
         providerOrder.forEach(providerKey => {
             if (streamsByProvider[providerKey] && streamsByProvider[providerKey].length > 0) {
                 combinedRawStreams.push(...streamsByProvider[providerKey]);
@@ -1545,6 +2198,20 @@ builder.defineStreamHandler(async (args) => {
 
     // Format and send the response
     const stremioStreamObjects = combinedRawStreams.map((stream) => {
+        // --- Special handling for MoviesMod which has pre-formatted titles ---
+        if (stream.provider === 'MoviesMod') {
+            return {
+                name: stream.name,    // Use the simple name from provider
+                title: stream.title,  // Use the detailed title from provider
+                url: stream.url,
+                type: 'url',
+                availability: 2,
+                behaviorHints: {
+                    notWebReady: true
+                }
+            };
+        }
+
         // --- NEW: Special handling for TopMovies to use its pre-formatted titles ---
         if (stream.provider === 'TopMovies') {
             return {
@@ -1559,16 +2226,18 @@ builder.defineStreamHandler(async (args) => {
             };
         }
 
-        // --- NEW: VidLink Proxy Rewrite ---
-        // Rewrite VidLink URLs to point to our local proxy to fix Content-Type headers
-        if (stream.provider === 'VidLink' && global.currentRequestConfig && global.currentRequestConfig.baseUrl) {
-            const baseUrl = global.currentRequestConfig.baseUrl;
-            const encodedUrl = encodeURIComponent(stream.url);
-            stream.url = `${baseUrl}/vidlink/m3u8?url=${encodedUrl}`;
-            // Remove headers for proxied streams as the proxy handles them
-            if (stream.headers) {
-                delete stream.headers;
-            }
+        // --- NEW: Special handling for MoviesDrive to use its pre-formatted titles ---
+        if (stream.provider === 'MoviesDrive') {
+            return {
+                name: stream.name,    // Use the name from the provider, e.g., "MoviesDrive (Pixeldrain) - 2160p"
+                title: stream.title,  // Use the title from the provider, e.g., "Title\nSize\nFilename"
+                url: stream.url,
+                type: 'url',
+                availability: 2,
+                behaviorHints: {
+                    notWebReady: true
+                }
+            };
         }
 
         const qualityLabel = stream.quality || 'UNK'; // UNK for unknown
@@ -1577,6 +2246,11 @@ builder.defineStreamHandler(async (args) => {
 
         if (stream.provider === 'ShowBox' && stream.title) {
             displayTitle = stream.title; // Use the raw filename from ShowBox
+        } else if (stream.provider === 'UHDMovies' && stream.fileName) {
+            const cleanFileName = stream.fileName.replace(/\.[^/.]+$/, "").replace(/[._]/g, ' ');
+            displayTitle = cleanFileName; // Use the cleaned filename as the main title
+        } else if (stream.provider === 'UHDMovies' && stream.fullTitle) {
+            displayTitle = stream.fullTitle;
         } else if (stream.provider === '4KHDHub' && stream.title) {
             displayTitle = stream.title; // Use the enhanced title that includes filename and size
         } else if (tmdbTypeFromId === 'tv' && seasonNum !== null && episodeNum !== null && movieOrSeriesTitle) {
@@ -1601,32 +2275,281 @@ builder.defineStreamHandler(async (args) => {
             } else {
                 providerDisplayName += ' (SLOW)';
             }
+        } else if (stream.provider === 'Soaper TV') {
+            providerDisplayName = 'Soaper TV';
+        } else if (stream.provider === 'VidZee') {
+            if (stream.language) {
+                providerDisplayName = `VidZee ${stream.language.toUpperCase()}`;
+            }
+        } else if (stream.provider === 'MP4Hydra') {
+            // Extract server number from title if present
+            const serverMatch = stream.title && stream.title.match(/\[MP4Hydra (#\d+)\]/);
+            if (serverMatch && serverMatch[1]) {
+                providerDisplayName = `MP4Hydra ${serverMatch[1]}`;
+            } else {
+                providerDisplayName = 'MP4Hydra';
+            }
+        } else if (stream.provider === 'UHDMovies') {
+            providerDisplayName = 'UHDMovies';
+        } else if (stream.provider === 'MoviesMod') {
+            providerDisplayName = 'MoviesMod';
+        } else if (stream.provider === 'TopMovies') {
+            providerDisplayName = 'TopMovies';
+        } else if (stream.provider === 'MoviesDrive') {
+            providerDisplayName = 'MoviesDrive';
+        } else if (stream.provider === '4KHDHub') {
+            providerDisplayName = '4KHDHub';
+        } else if (stream.provider === 'Vixsrc') {
+            providerDisplayName = 'Vixsrc';
+        } else if (stream.provider === 'MovieBox') {
+            providerDisplayName = 'MovieBox';
         } else if (stream.provider === 'PStream') {
             providerDisplayName = '🌐 ShowBox ⚡'; // PStream streams should show as ShowBox with lightning
         }
 
-        const finalName = `[${providerDisplayName}] ${qualityLabel} ${flagEmoji}`;
+        let nameDisplay;
+        if (stream.provider === 'MP4Hydra') {
+            // For MP4Hydra, we want to show the server number prominently
+            const qualityLabel = stream.quality || 'UNK';
+            nameDisplay = `${providerDisplayName} - ${qualityLabel}`;
+        } else if (stream.provider === 'UHDMovies') {
+            // For UHDMovies, show quality prominently
+            const qualityLabel = stream.quality || 'UNK';
+            nameDisplay = `${providerDisplayName} - ${qualityLabel}`;
+        } else if (stream.provider === 'MoviesMod') {
+            // For MoviesMod, use the enhanced stream title that comes from the provider
+            // which includes detailed quality, codec, size, language and method information
+            nameDisplay = stream.title || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+        } else if (stream.provider === 'TopMovies') {
+            nameDisplay = stream.title || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+        } else if (stream.provider === 'MoviesDrive') {
+            // For MoviesDrive, use the enhanced stream title that comes from the provider
+            // which includes detailed quality, source, and size information
+            nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+        } else if (stream.provider === '4KHDHub') {
+            // For 4KHDHub, extract metadata from stream title and enhance the name
+            const extractMetadata = (title) => {
+                if (!title) return { nameMetadata: [], audioMetadata: [] };
+                const nameMetadata = [];
+                const audioMetadata = [];
+
+                // Check for HDR formats
+                if (/HDR10/i.test(title)) nameMetadata.push('HDR10');
+                if (/\bDV\b|Dolby.?Vision/i.test(title)) nameMetadata.push('DV');
+                if (/HDR/i.test(title) && !nameMetadata.includes('HDR10')) nameMetadata.push('HDR');
+
+                // Check for source formats
+                if (/BluRay|Blu-ray|BDRip|BRRip/i.test(title)) nameMetadata.push('BluRay');
+                if (/WEB-?DL|WEBRip/i.test(title)) nameMetadata.push('WEB');
+                if (/REMUX/i.test(title)) nameMetadata.push('REMUX');
+                if (/DVD/i.test(title)) nameMetadata.push('DVD');
+
+                // Check for special formats
+                if (/IMAX/i.test(title)) nameMetadata.push('IMAX');
+
+                // Check for audio formats (for title field)
+                if (/ATMOS/i.test(title)) audioMetadata.push('ATMOS');
+                if (/DTS/i.test(title)) audioMetadata.push('DTS');
+
+                return { nameMetadata, audioMetadata };
+            };
+
+            // Create abbreviated server name mapping for 4KHDHub
+            const getAbbreviatedServerName = (streamName) => {
+                if (!streamName) return `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+
+                const serverMappings = {
+                    'HubCloud': '[HC]',
+                    'Pixeldrain': '[PD]',
+                    'FSL Server': '[FSL]',
+                    'BuzzServer': '[BS]',
+                    'S3 Server': '[S3]',
+                    '10Gbps Server': '[10G]',
+                    'HubDrive': '[HD]',
+                    'Direct Link': '[DL]'
+                };
+
+                // Extract server name from stream.name (format: "4KHDHub - ServerName - Quality")
+                const match = streamName.match(/4KHDHub - ([^-]+)/);
+                if (match) {
+                    const serverName = match[1].trim();
+                    const abbreviation = serverMappings[serverName] || `[${serverName.substring(0, 3).toUpperCase()}]`;
+
+                    // Format quality display
+                    const quality = stream.quality || 'UNK';
+                    let qualityDisplay;
+                    if (quality === '2160' || quality === 2160 || quality === '2160p') {
+                        qualityDisplay = '4K';
+                    } else if (typeof quality === 'string' && quality.endsWith('p')) {
+                        qualityDisplay = quality; // Already has 'p' suffix
+                    } else {
+                        qualityDisplay = `${quality}p`;
+                    }
+
+                    return `4KHDHub ${abbreviation} - ${qualityDisplay}`;
+                }
+
+                return streamName;
+            };
+
+            const baseName = getAbbreviatedServerName(stream.name);
+            const { nameMetadata, audioMetadata } = extractMetadata(stream.title);
+
+            // Store audio metadata for later use in title field
+            stream.audioMetadata = audioMetadata;
+
+            if (nameMetadata.length > 0) {
+                nameDisplay = `${baseName} | ${nameMetadata.join(' | ')}`;
+            } else {
+                nameDisplay = baseName;
+            }
+        } else if (stream.provider === 'Vixsrc') {
+            // For Vixsrc, show quality prominently
+            const qualityLabel = stream.quality || 'UNK';
+            nameDisplay = `${providerDisplayName} - ${qualityLabel}`;
+        } else if (stream.provider === 'MovieBox') {
+            // For MovieBox, use the name field from the provider (includes language if detected)
+            nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+        } else if (stream.provider === 'NetMirror') {
+            // For NetMirror, use the title field from the provider which contains quality info
+            // Fallback to name if title is missing
+            nameDisplay = stream.title || stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+        } else if (stream.provider === 'Castle') {
+            // For Castle, use the name field from the provider (includes language)
+            nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+        } else if (stream.provider === 'VFlix') {
+            // For VFlix, use the name field from the provider
+            nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+        } else if (stream.provider === 'Videasy') {
+            // For Videasy, use the name field from the provider (includes server name and language)
+            nameDisplay = stream.name || `${providerDisplayName} - ${stream.quality || 'UNK'}`;
+        } else { // For other providers
+            const qualityLabel = stream.quality || 'UNK';
+            // Skip flag emoji for PStream streams
+            if (stream.provider === 'PStream') {
+                nameDisplay = `${providerDisplayName} - ${qualityLabel}`;
+            } else if (flagEmoji) {
+                nameDisplay = `${flagEmoji} ${providerDisplayName} - ${qualityLabel}`;
+            } else {
+                nameDisplay = `${providerDisplayName} - ${qualityLabel}`;
+            }
+        }
+
+        const nameVideoTechTags = [];
+        if (stream.codecs && Array.isArray(stream.codecs)) {
+            // For ShowBox, include all HDR-related codecs
+            if (stream.provider === 'ShowBox') {
+                if (stream.codecs.includes('DV')) {
+                    nameVideoTechTags.push('DV');
+                }
+                if (stream.codecs.includes('HDR10+')) {
+                    nameVideoTechTags.push('HDR10+');
+                }
+                if (stream.codecs.includes('HDR')) {
+                    nameVideoTechTags.push('HDR');
+                }
+            }
+            // For any other provider (that isn't UHDMovies), use the original behavior
+            else if (stream.provider !== 'UHDMovies') {
+                if (stream.codecs.includes('DV')) {
+                    nameVideoTechTags.push('DV');
+                } else if (stream.codecs.includes('HDR10+')) {
+                    nameVideoTechTags.push('HDR10+');
+                } else if (stream.codecs.includes('HDR')) {
+                    nameVideoTechTags.push('HDR');
+                }
+            }
+        }
+        if (nameVideoTechTags.length > 0) {
+            nameDisplay += ` | ${nameVideoTechTags.join(' | ')}`;
+        }
+
+        let titleParts = [];
+
+        if (stream.codecs && Array.isArray(stream.codecs) && stream.codecs.length > 0) {
+            // A more specific order for codecs
+            const codecOrder = ['DV', 'HDR', 'Atmos', 'DTS-HD', 'DTS', 'EAC3', 'AC3', 'H.265', 'H.264', '10-bit'];
+            const sortedCodecs = stream.codecs.slice().sort((a, b) => {
+                const indexA = codecOrder.indexOf(a);
+                const indexB = codecOrder.indexOf(b);
+                if (indexA === -1 && indexB === -1) return 0;
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+            });
+            titleParts.push(...sortedCodecs);
+        }
+
+        // Prepare optional quota line for ShowBox personal cookie usage
+        let quotaLine = '';
+
+        if (stream.size && stream.size !== 'Unknown size' && !stream.size.toLowerCase().includes('n/a')) {
+            let sizeWithAudio = stream.size;
+
+            // Add audio metadata for 4KHDHub after size with dot separation
+            if (stream.provider === '4KHDHub' && stream.audioMetadata && stream.audioMetadata.length > 0) {
+                sizeWithAudio += ' • ' + stream.audioMetadata.join(' • ');
+            }
+
+            // Build quota remaining info for ShowBox/PStream when a personal cookie was selected (on next line)
+            if ((stream.provider === 'ShowBox' || stream.provider === 'PStream') && hasAnyCookies) {
+                const remainingMb = global.currentRequestUserCookieRemainingMB;
+                if (typeof remainingMb === 'number' && remainingMb >= 0) {
+                    const remainingGb = remainingMb >= 1024 ? `${(remainingMb / 1024).toFixed(2)} GB` : `${Math.round(remainingMb)} MB`;
+                    quotaLine = `\nQuota left: ${remainingGb}`;
+                }
+            }
+
+            titleParts.push(sizeWithAudio);
+        }
+
+        const titleSecondLine = titleParts.join(" • ");
+        let finalTitle = titleSecondLine ? `${displayTitle}
+${titleSecondLine}` : displayTitle;
+
+        // Append quota line (if any) right after size/codec line
+        if (quotaLine) {
+            finalTitle += `${quotaLine}`;
+        }
+
+        // Add warning for ShowBox if no personal cookie is present
+        if (stream.provider === 'ShowBox' && !hasAnyCookies) {
+            const warningMessage = "⚠️ Slow? Add personal FebBox cookie in addon config for faster streaming.";
+            finalTitle += `
+${warningMessage}`;
+        }
 
         const stremioStream = {
-            name: finalName,
-            title: displayTitle,
+            name: nameDisplay,
+            title: finalTitle,
             url: stream.url,
-            type: stream.type || 'url',
-            availability: 2,
-            behaviorHints: {
-                notWebReady: true
-            }
+            type: stream.type || 'url', // Use provider's type (hls, direct, etc.) or default to 'url'
+            availability: 2
         };
 
-        // Include headers if present (critical for providers like NetMirror)
+        // Include headers if present (critical for providers like NetMirror, MP4Hydra, etc.)
         if (stream.headers) {
+            stremioStream.headers = stream.headers; // Keep top-level for potential backward compat
+
+            // Ensure behaviorHints exists
+            if (!stremioStream.behaviorHints) {
+                stremioStream.behaviorHints = {};
+            }
+
+            // Add headers to behaviorHints (standard Stremio way)
             stremioStream.behaviorHints.headers = stream.headers;
+        }
+
+        // Include behaviorHints if present from provider
+        if (stream.behaviorHints) {
+            stremioStream.behaviorHints = stream.behaviorHints;
         }
 
         return stremioStream;
     });
 
     console.log("--- BEGIN Stremio Stream Objects to be sent ---");
+    // Log first 3 streams to keep logs shorter
     const streamSample = stremioStreamObjects.slice(0, 3);
     console.log(JSON.stringify(streamSample, null, 2));
     if (stremioStreamObjects.length > 3) {
@@ -1634,12 +2557,46 @@ builder.defineStreamHandler(async (args) => {
     }
     console.log("--- END Stremio Stream Objects to be sent ---");
 
+    // No need to clean up global variables since we're not using them anymore
     const requestEndTime = Date.now();
     const totalRequestTime = requestEndTime - requestStartTime;
     console.log(`Request for ${id} completed successfully`);
-    console.log(`Total Request Time: ${totalRequestTime}ms`);
 
-    return { streams: stremioStreamObjects };
+    // --- Timings Summary ---
+    console.log("--- Request Timings Summary ---");
+    console.log(JSON.stringify(providerTimings, null, 2));
+    console.log(`Total Request Time: ${formatDuration(totalRequestTime)}`);
+    console.log("-------------------------------");
+
+    // Check if 4KHDHub is not selected and add informational stream
+    const is4KHDHubSelected = !selectedProvidersArray || selectedProvidersArray.includes('4khdhub');
+    if (!is4KHDHubSelected && ENABLE_4KHDHUB_PROVIDER) {
+        console.log("[4KHDHub] Not selected by user - adding informational stream");
+
+        // Create informational stream about 4KHDHub
+        const infoStream = {
+            name: "🎯 4KHDHub - Wide Content Available",
+            title: `Enable 4KHDHub Provider
+
+• Multiple servers (HubCloud, Pixeldrain, BuzzServer)
+• Extensive movie & TV collection
+• Fast streaming with quality options
+
+Add "4khdhub" to your provider configuration`,
+            url: "https://github.com/tapframe/NuvioStreamsAddon#4khdhub-provider",
+            type: 'url',
+            availability: 1,
+            behaviorHints: {
+                notWebReady: false // This is informational, so web-ready
+            }
+        };
+
+        stremioStreamObjects.push(infoStream);
+    }
+
+    return {
+        streams: stremioStreamObjects
+    };
 });
 
 // Build and export the addon

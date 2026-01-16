@@ -13,8 +13,7 @@
     ],
     "catalogs": [],
     "idPrefixes": [
-        "tt",
-        "tmdb"
+        "tt"
     ],
     "behaviorHints": {
         "configurable": true,
