@@ -63,83 +63,55 @@ async function getStreams(type, imdbId, season, episode) {
             // Fallback for movies if selector fails or multiple files
             elements = $("a.wrap.directory-entry").filter((i, el) => {
                 return $(el).text().match(/\.(mp4|mkv|avi)$/i);
-            });
-        }
-
-        const streams = [];
-
-        elements.each((i, el) => {
-            const href = $(el).attr('href');
-            const text = $(el).text();
-
-            if (href) {
-                const details = parseFilename(text);
-                const title = `Vadapav ${details.quality} ${details.language}\n${text}`;
-
-                streams.push({
-                    name: 'Vadapav',
-                    title: title,
-                    url: vadapavAPI + href,
-                    behaviorHints: {
-                        bingeGroup: `vadapav-${details.quality}`
-                    }
-                });
+                return [];
             }
-        });
-
-        return streams;
-
-    } catch (error) {
-        console.error("Vadapav Error:", error.message);
-        return [];
-    }
 }
 
-function parseFilename(filename) {
-    let quality = 'Unknown';
-    let language = '';
+        function parseFilename(filename) {
+            let quality = 'Unknown';
+            let language = '';
 
-    // Quality
-    if (filename.match(/2160p|4k/i)) quality = '4K';
-    else if (filename.match(/1080p/i)) quality = '1080p';
-    else if (filename.match(/720p/i)) quality = '720p';
-    else if (filename.match(/480p/i)) quality = '480p';
+            // Quality
+            if (filename.match(/2160p|4k/i)) quality = '4K';
+            else if (filename.match(/1080p/i)) quality = '1080p';
+            else if (filename.match(/720p/i)) quality = '720p';
+            else if (filename.match(/480p/i)) quality = '480p';
 
-    // Language
-    if (filename.match(/hindi|hin/i)) language += '🇮🇳 Hindi ';
-    if (filename.match(/english|eng/i)) language += '🇺🇸 English ';
-    if (filename.match(/dual|multi/i)) language += '🌎 Dual Audio ';
-    if (filename.match(/tam|tamil/i)) language += 'Tamil ';
-    if (filename.match(/tel|telugu/i)) language += 'Telugu ';
+            // Language
+            if (filename.match(/hindi|hin/i)) language += '🇮🇳 Hindi ';
+            if (filename.match(/english|eng/i)) language += '🇺🇸 English ';
+            if (filename.match(/dual|multi/i)) language += '🌎 Dual Audio ';
+            if (filename.match(/tam|tamil/i)) language += 'Tamil ';
+            if (filename.match(/tel|telugu/i)) language += 'Telugu ';
 
-    // Codec/HDR
-    const extras = [];
-    if (filename.match(/x265|hevc/i)) extras.push('HEVC');
-    if (filename.match(/10bit/i)) extras.push('10bit');
-    if (filename.match(/hdr/i)) extras.push('HDR');
-    if (filename.match(/dv|dolby vision/i)) extras.push('DV');
+            // Codec/HDR
+            const extras = [];
+            if (filename.match(/x265|hevc/i)) extras.push('HEVC');
+            if (filename.match(/10bit/i)) extras.push('10bit');
+            if (filename.match(/hdr/i)) extras.push('HDR');
+            if (filename.match(/dv|dolby vision/i)) extras.push('DV');
 
-    return {
-        quality,
-        language: language.trim(),
-        extras: extras.join(' ')
-    };
-}
-
-async function getMetadata(type, id) {
-    try {
-        const metaUrl = `https://v3-cinemeta.strem.io/meta/${type}/${id}.json`;
-        const { data } = await axios.get(metaUrl);
-        if (data && data.meta) {
             return {
-                title: data.meta.name,
-                year: data.meta.year ? data.meta.year.split('-')[0] : ''
+                quality,
+                language: language.trim(),
+                extras: extras.join(' ')
             };
         }
-    } catch (e) {
-        console.error("Metadata Error:", e.message);
-    }
-    return null;
-}
 
-module.exports = { getStreams };
+        async function getMetadata(type, id) {
+            try {
+                const metaUrl = `https://v3-cinemeta.strem.io/meta/${type}/${id}.json`;
+                const { data } = await axios.get(metaUrl);
+                if (data && data.meta) {
+                    return {
+                        title: data.meta.name,
+                        year: data.meta.year ? data.meta.year.split('-')[0] : ''
+                    };
+                }
+            } catch (e) {
+                console.error("Metadata Error:", e.message);
+            }
+            return null;
+        }
+
+        module.exports = { getStreams };
