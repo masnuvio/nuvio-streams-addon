@@ -8,6 +8,7 @@ const cors = require('cors');
 const crypto = require('crypto'); // For generating a simple hash for personalized manifest ID
 const axios = require('axios'); // Added axios for HTTP requests
 const { AsyncLocalStorage } = require('async_hooks');
+const { spawn } = require('child_process');
 // body-parser is not strictly needed if we remove the POST /api/set-cookie endpoint and don't have other JSON POST bodies to parse for now.
 // const bodyParser = require('body-parser'); 
 
@@ -716,23 +717,27 @@ app.get('/health', (req, res) => {
 });
 
 // --- VidLink Proxy Routes ---
-app.get('/vidlink/m3u8', async (req, res) => {
+app.get('/vidlink/m3u8', (req, res) => {
     const { url: streamUrl } = req.query;
     if (!streamUrl) return res.status(400).send('Missing url');
 
-    try {
-        // Fetch M3U8
-        const response = await axios.get(streamUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
-                'Referer': 'https://vidlink.pro/',
-                'Origin': 'https://vidlink.pro'
-            },
-            responseType: 'text'
-        });
+    // Use curl to fetch M3U8 text content
+    const curl = spawn('curl', [
+        '-s', '-L',
+        '-H', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+        '-H', 'Referer: https://vidlink.pro/',
+        '-H', 'Origin: https://vidlink.pro',
+        streamUrl
+    ]);
 
-        const m3u8Content = response.data;
-        const effectiveUrl = response.request.res.responseUrl || streamUrl;
+    let m3u8Content = '';
+    curl.stdout.on('data', (data) => { m3u8Content += data.toString(); });
+
+    curl.on('close', (code) => {
+        if (code !== 0) {
+            console.error(`Proxy M3U8 Curl failed with code ${code}`);
+            return res.status(500).send('Error fetching M3U8');
+        }
 
         // Rewrite segments
         const modifiedM3U8 = m3u8Content.split('\n').map(line => {
@@ -740,10 +745,10 @@ app.get('/vidlink/m3u8', async (req, res) => {
             if (trimmed && !trimmed.startsWith('#')) {
                 // It's a segment or URL
                 try {
-                    const originalSegmentUrl = new URL(trimmed, effectiveUrl).toString();
+                    const originalSegmentUrl = new URL(trimmed, streamUrl).toString();
                     const encodedUrl = encodeURIComponent(originalSegmentUrl);
-                    const proxyBase = `${req.protocol}://${req.get('host')}`;
-                    return `${proxyBase}/vidlink/segment?url=${encodedUrl}`;
+                    // Use relative path for the proxy segment URL to avoid baseUrl issues
+                    return `segment?url=${encodedUrl}`;
                 } catch (e) {
                     return line; // Keep as is if URL parsing fails
                 }
@@ -753,35 +758,33 @@ app.get('/vidlink/m3u8', async (req, res) => {
 
         res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
         res.send(modifiedM3U8);
+    });
 
-    } catch (e) {
-        console.error("Proxy M3U8 Error:", e.message);
-        res.status(500).send("Error fetching M3U8");
-    }
+    curl.stderr.on('data', (data) => {
+        console.error(`Proxy M3U8 Curl Error: ${data}`);
+    });
 });
 
-app.get('/vidlink/segment', async (req, res) => {
+app.get('/vidlink/segment', (req, res) => {
     const { url: targetUrl } = req.query;
     if (!targetUrl) return res.status(400).send('Missing url');
 
-    try {
-        const response = await axios.get(targetUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
-                'Referer': 'https://vidlink.pro/',
-                'Origin': 'https://vidlink.pro'
-            },
-            responseType: 'stream'
-        });
+    const curl = spawn('curl', [
+        '-s', '-L',
+        '-H', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+        '-H', 'Referer: https://vidlink.pro/',
+        '-H', 'Origin: https://vidlink.pro',
+        targetUrl
+    ]);
 
-        res.setHeader('Content-Type', 'video/mp2t');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        response.data.pipe(res);
+    res.setHeader('Content-Type', 'video/mp2t');
+    res.setHeader('Access-Control-Allow-Origin', '*');
 
-    } catch (e) {
-        console.error("Proxy Segment Error:", e.message);
-        res.status(500).send("Error fetching segment");
-    }
+    curl.stdout.pipe(res);
+
+    curl.stderr.on('data', (data) => {
+        // console.error(`Proxy Segment Curl Error: ${data}`);
+    });
 });
 // ----------------------------
 

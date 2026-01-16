@@ -1450,9 +1450,10 @@ builder.defineStreamHandler(async (args) => {
             const baseUrl = global.currentRequestConfig.baseUrl;
             const encodedUrl = encodeURIComponent(stream.url);
             stream.url = `${baseUrl}/vidlink/m3u8?url=${encodedUrl}`;
-            // Remove headers so they aren't added to behaviorHints later
-            // The proxy handles the necessary headers for the upstream request
-            if (stream.headers) delete stream.headers;
+            // Remove headers for proxied streams as the proxy handles them
+            if (stream.headers) {
+                delete stream.headers;
+            }
         }
 
         const qualityLabel = stream.quality || 'UNK'; // UNK for unknown
