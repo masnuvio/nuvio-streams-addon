@@ -1074,7 +1074,7 @@ builder.defineStreamHandler(async (args) => {
             // No cache or expired, fetch fresh with retry mechanism
             console.log(`[ShowBox] Fetching new streams...`);
             let lastError = null;
-            const MAX_SHOWBOX_RETRIES = 3;
+            const MAX_SHOWBOX_RETRIES = 2;
 
             // Retry logic for ShowBox
             for (let attempt = 1; attempt <= MAX_SHOWBOX_RETRIES; attempt++) {
@@ -1407,8 +1407,8 @@ builder.defineStreamHandler(async (args) => {
     console.log('Running parallel provider fetches with caching...');
 
     try {
-        // Execute all provider functions in parallel with 15-second timeout
-        const PROVIDER_TIMEOUT_MS = 15000; // 15 seconds
+        // Execute all provider functions in parallel with 12-second timeout
+        const PROVIDER_TIMEOUT_MS = 12000; // 12 seconds
         const providerPromises = [
             timeProvider('ShowBox', providerFetchFunctions.showbox()),
             timeProvider('TopMovies', providerFetchFunctions.topmovies()),
@@ -1421,13 +1421,14 @@ builder.defineStreamHandler(async (args) => {
             timeProvider('Castle', providerFetchFunctions.castle()),
             timeProvider('Vadapav', providerFetchFunctions.vadapav()),
             timeProvider('Bollyflix', providerFetchFunctions.bollyflix()),
-            timeProvider('VegaMovies', providerFetchFunctions.vegamovies()),
-            timeProvider('GDIndex', providerFetchFunctions.gdindex()),
-            timeProvider('OnlineMoviesHindi', providerFetchFunctions.onlinemovieshindi()),
-            timeProvider('MoviesDrive', providerFetchFunctions.moviesdrive()),
-            timeProvider('MoviesMod', providerFetchFunctions.moviesmod()),
-            timeProvider('LuxMovies', providerFetchFunctions.luxmovies()),
-            timeProvider('Rogmovies', providerFetchFunctions.rogmovies()),
+            // COMMENTED OUT: These providers are not yet implemented
+            // timeProvider('VegaMovies', providerFetchFunctions.vegamovies()),
+            // timeProvider('GDIndex', providerFetchFunctions.gdindex()),
+            // timeProvider('OnlineMoviesHindi', providerFetchFunctions.onlinemovieshindi()),
+            // timeProvider('MoviesDrive', providerFetchFunctions.moviesdrive()),
+            // timeProvider('MoviesMod', providerFetchFunctions.moviesmod()),
+            // timeProvider('LuxMovies', providerFetchFunctions.luxmovies()),
+            // timeProvider('Rogmovies', providerFetchFunctions.rogmovies()),
 
         ];
 
@@ -1493,13 +1494,14 @@ builder.defineStreamHandler(async (args) => {
             'Castle': ENABLE_CASTLE_PROVIDER && shouldFetch('castle') ? applyAllStreamFilters(providerResults[8], 'Castle', minQualitiesPreferences.castle, excludeCodecsPreferences.castle) : [],
             'Vadapav': shouldFetch('vadapav') ? applyAllStreamFilters(providerResults[9], 'Vadapav', minQualitiesPreferences.vadapav, excludeCodecsPreferences.vadapav) : [],
             'Bollyflix': shouldFetch('bollyflix') ? applyAllStreamFilters(providerResults[10], 'Bollyflix', minQualitiesPreferences.bollyflix, excludeCodecsPreferences.bollyflix) : [],
-            'VegaMovies': shouldFetch('vegamovies') ? applyAllStreamFilters(providerResults[11], 'VegaMovies', minQualitiesPreferences.vegamovies, excludeCodecsPreferences.vegamovies) : [],
-            'GDIndex': shouldFetch('gdindex') ? applyAllStreamFilters(providerResults[12], 'GDIndex', minQualitiesPreferences.gdindex, excludeCodecsPreferences.gdindex) : [],
-            'OnlineMoviesHindi': shouldFetch('onlinemovieshindi') ? applyAllStreamFilters(providerResults[13], 'OnlineMoviesHindi', minQualitiesPreferences.onlinemovieshindi, excludeCodecsPreferences.onlinemovieshindi) : [],
-            'MoviesDrive': shouldFetch('moviesdrive') ? applyAllStreamFilters(providerResults[14], 'MoviesDrive', minQualitiesPreferences.moviesdrive, excludeCodecsPreferences.moviesdrive) : [],
-            'MoviesMod': shouldFetch('moviesmod') ? applyAllStreamFilters(providerResults[15], 'MoviesMod', minQualitiesPreferences.moviesmod, excludeCodecsPreferences.moviesmod) : [],
-            'LuxMovies': shouldFetch('luxmovies') ? applyAllStreamFilters(providerResults[16], 'LuxMovies', minQualitiesPreferences.luxmovies, excludeCodecsPreferences.luxmovies) : [],
-            'Rogmovies': shouldFetch('rogmovies') ? applyAllStreamFilters(providerResults[17], 'Rogmovies', minQualitiesPreferences.rogmovies, excludeCodecsPreferences.rogmovies) : [],
+            // COMMENTED OUT: These providers are not yet implemented
+            // 'VegaMovies': shouldFetch('vegamovies') ? applyAllStreamFilters(providerResults[11], 'VegaMovies', minQualitiesPreferences.vegamovies, excludeCodecsPreferences.vegamovies) : [],
+            // 'GDIndex': shouldFetch('gdindex') ? applyAllStreamFilters(providerResults[12], 'GDIndex', minQualitiesPreferences.gdindex, excludeCodecsPreferences.gdindex) : [],
+            // 'OnlineMoviesHindi': shouldFetch('onlinemovieshindi') ? applyAllStreamFilters(providerResults[13], 'OnlineMoviesHindi', minQualitiesPreferences.onlinemovieshindi, excludeCodecsPreferences.onlinemovieshindi) : [],
+            // 'MoviesDrive': shouldFetch('moviesdrive') ? applyAllStreamFilters(providerResults[14], 'MoviesDrive', minQualitiesPreferences.moviesdrive, excludeCodecsPreferences.moviesdrive) : [],
+            // 'MoviesMod': shouldFetch('moviesmod') ? applyAllStreamFilters(providerResults[15], 'MoviesMod', minQualitiesPreferences.moviesmod, excludeCodecsPreferences.moviesmod) : [],
+            // 'LuxMovies': shouldFetch('luxmovies') ? applyAllStreamFilters(providerResults[16], 'LuxMovies', minQualitiesPreferences.luxmovies, excludeCodecsPreferences.luxmovies) : [],
+            // 'Rogmovies': shouldFetch('rogmovies') ? applyAllStreamFilters(providerResults[17], 'Rogmovies', minQualitiesPreferences.rogmovies, excludeCodecsPreferences.rogmovies) : [],
 
         };
 
