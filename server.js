@@ -204,6 +204,12 @@ app.use((req, res, next) => {
 
     // Run the rest of the request within AsyncLocalStorage context for isolation
     // This ensures each request has its own isolated config that won't leak to other requests
+
+    // Add baseUrl to requestConfig
+    const protocol = req.protocol;
+    const host = req.get('host');
+    requestConfig.baseUrl = `${protocol}://${host}`;
+
     requestContext.run({ config: requestConfig }, () => {
         // Also set on req for direct access in middleware
         req.nuvioConfig = requestConfig;
@@ -708,6 +714,76 @@ app.get('/api/region-status', (req, res) => {
 app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
+
+// --- VidLink Proxy Routes ---
+app.get('/vidlink/m3u8', async (req, res) => {
+    const { url: streamUrl } = req.query;
+    if (!streamUrl) return res.status(400).send('Missing url');
+
+    try {
+        // Fetch M3U8
+        const response = await axios.get(streamUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+                'Referer': 'https://vidlink.pro/',
+                'Origin': 'https://vidlink.pro'
+            },
+            responseType: 'text'
+        });
+
+        const m3u8Content = response.data;
+        const effectiveUrl = response.request.res.responseUrl || streamUrl;
+
+        // Rewrite segments
+        const modifiedM3U8 = m3u8Content.split('\n').map(line => {
+            const trimmed = line.trim();
+            if (trimmed && !trimmed.startsWith('#')) {
+                // It's a segment or URL
+                try {
+                    const originalSegmentUrl = new URL(trimmed, effectiveUrl).toString();
+                    const encodedUrl = encodeURIComponent(originalSegmentUrl);
+                    const proxyBase = `${req.protocol}://${req.get('host')}`;
+                    return `${proxyBase}/vidlink/segment?url=${encodedUrl}`;
+                } catch (e) {
+                    return line; // Keep as is if URL parsing fails
+                }
+            }
+            return line;
+        }).join('\n');
+
+        res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+        res.send(modifiedM3U8);
+
+    } catch (e) {
+        console.error("Proxy M3U8 Error:", e.message);
+        res.status(500).send("Error fetching M3U8");
+    }
+});
+
+app.get('/vidlink/segment', async (req, res) => {
+    const { url: targetUrl } = req.query;
+    if (!targetUrl) return res.status(400).send('Missing url');
+
+    try {
+        const response = await axios.get(targetUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+                'Referer': 'https://vidlink.pro/',
+                'Origin': 'https://vidlink.pro'
+            },
+            responseType: 'stream'
+        });
+
+        res.setHeader('Content-Type', 'video/mp2t');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        response.data.pipe(res);
+
+    } catch (e) {
+        console.error("Proxy Segment Error:", e.message);
+        res.status(500).send("Error fetching segment");
+    }
+});
+// ----------------------------
 
 const PORT = process.env.PORT || 7000;
 

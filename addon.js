@@ -1444,6 +1444,17 @@ builder.defineStreamHandler(async (args) => {
             };
         }
 
+        // --- NEW: VidLink Proxy Rewrite ---
+        // Rewrite VidLink URLs to point to our local proxy to fix Content-Type headers
+        if (stream.provider === 'vidlink' && global.currentRequestConfig && global.currentRequestConfig.baseUrl) {
+            const baseUrl = global.currentRequestConfig.baseUrl;
+            const encodedUrl = encodeURIComponent(stream.url);
+            stream.url = `${baseUrl}/vidlink/m3u8?url=${encodedUrl}`;
+            // Remove headers so they aren't added to behaviorHints later
+            // The proxy handles the necessary headers for the upstream request
+            if (stream.headers) delete stream.headers;
+        }
+
         const qualityLabel = stream.quality || 'UNK'; // UNK for unknown
 
         let displayTitle;
