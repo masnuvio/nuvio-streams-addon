@@ -229,6 +229,32 @@ Certbot will automatically:
 curl https://your-domain.com/manifest.json
 ```
 
+## 🧹 Maintenance & Cleanup
+
+To keep your server clean and running smoothly, you can use the included cleanup script.
+
+```bash
+# Run cleanup script
+sudo bash cleanup.sh
+```
+
+This script will:
+- ✅ Flush PM2 logs
+- ✅ Clear application log files
+- ✅ Clear stream cache
+- ✅ Remove temporary files
+- ✅ Optionally clear Nginx logs
+
+You can also set up a cron job to run this periodically (e.g., weekly):
+
+```bash
+# Edit crontab
+sudo crontab -e
+
+# Add line to run cleanup every Sunday at 3 AM
+0 3 * * 0 bash /var/www/nuvio-streams-addon/cleanup.sh >> /var/log/nuvio-cleanup.log 2>&1
+```
+
 ## 🔧 Process Management
 
 ### PM2 Commands
