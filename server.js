@@ -26,18 +26,6 @@ function getRequestConfig() {
 
 // Export for use in addon.js
 global.getRequestConfig = getRequestConfig;
-global.requestContext = requestContext;
-
-// REMOVE: User cookies directory and related fs operations
-// const USER_COOKIES_DIR = path.join(__dirname, '.user_cookies');
-// (async () => { ... })();
-
-// Enable CORS for all routes
-app.use(cors());
-
-app.use(express.json()); // Middleware to parse JSON bodies, needed for /api/validate-cookie
-
-// REMOVE: bodyParser.json() if no other routes need it.
 // app.use(bodyParser.json());
 
 // Serve static files from the 'views' directory (for the landing page)

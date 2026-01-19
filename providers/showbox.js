@@ -349,7 +349,12 @@ const getStreamsFromTmdbId = async (tmdbType, tmdbId, seasonNum = null, episodeN
 
         // Build API URL
         let apiUrl;
-        const oss = regionPreference || 'USA7'; // Default to USA7 if no region preference
+        // Remote repo logic: OSS is optional and seemingly only used for TV in the remote code, 
+        // but let's support it if provided, matching the remote structure more closely.
+        // Remote TV: /tv/:id/oss=:oss/:s/:e OR /tv/:id/:s/:e
+        // Remote Movie: /movie/:id
+
+        const oss = regionPreference; // Can be null
 
         if (tmdbType === 'tv' || tmdbType === 'series') {
             if (seasonNum === null || episodeNum === null) {
@@ -357,9 +362,14 @@ const getStreamsFromTmdbId = async (tmdbType, tmdbId, seasonNum = null, episodeN
                 console.timeEnd(mainTimerLabel);
                 return [];
             }
-            apiUrl = `${FEBAPI_BASE_URL}/tv/${tmdbId}/oss=${oss}/${seasonNum}/${episodeNum}`;
+            if (oss) {
+                apiUrl = `${FEBAPI_BASE_URL}/tv/${tmdbId}/oss=${oss}/${seasonNum}/${episodeNum}`;
+            } else {
+                apiUrl = `${FEBAPI_BASE_URL}/tv/${tmdbId}/${seasonNum}/${episodeNum}`;
+            }
         } else if (tmdbType === 'movie') {
-            apiUrl = `${FEBAPI_BASE_URL}/movie/${tmdbId}/oss=${oss}`;
+            // Remote repo does not use OSS for movies in the URL construction
+            apiUrl = `${FEBAPI_BASE_URL}/movie/${tmdbId}`;
         } else {
             console.log(`[ShowBox] Unsupported media type: ${tmdbType}`);
             console.timeEnd(mainTimerLabel);
@@ -373,11 +383,15 @@ const getStreamsFromTmdbId = async (tmdbType, tmdbId, seasonNum = null, episodeN
 
         console.log(`[ShowBox] Making request to: ${apiUrl.replace(/\?cookie=.*/, '?cookie=***')}`); // Hide cookie in logs
 
-        // Make API request
+        // Make API request with updated headers from remote repo
         const response = await axios.get(apiUrl, {
             timeout: 30000,
             headers: {
-                'User-Agent': 'NuvioStreamsAddon/1.0'
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+                'Accept': 'application/json',
+                'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br, zstd',
+                'Content-Type': 'application/json'
             }
         });
 

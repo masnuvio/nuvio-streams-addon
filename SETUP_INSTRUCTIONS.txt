@@ -1,0 +1,169 @@
+# ============================================
+# YOUR NETWORK INFORMATION
+# ============================================
+# Generated: 2026-01-17 02:48:54 UTC
+
+PUBLIC IP ADDRESS: 163.223.52.102
+ROUTER/GATEWAY: 163.223.52.1
+
+# ============================================
+# STEP-BY-STEP SETUP GUIDE
+# ============================================
+
+## STEP 1: SET UP DUCKDNS DOMAIN
+────────────────────────────────────────────
+
+1. Go to: https://www.duckdns.org
+2. Sign in with GitHub, Google, Reddit, or Twitter
+3. In the "sub domain" field, type: nuvio
+4. In the "current ip" field, type: 163.223.52.102
+5. Click "add domain"
+6. IMPORTANT: Copy your token and save it!
+
+Your domain will be: nuvio.duckdns.org ✅
+
+## STEP 2: UPDATE THE AUTO-UPDATE SCRIPT
+────────────────────────────────────────────
+
+1. Open file: duckdns-update.ps1
+2. Find this line: $DUCKDNS_TOKEN = "YOUR_DUCKDNS_TOKEN_HERE"
+3. Replace YOUR_DUCKDNS_TOKEN_HERE with your actual token from DuckDNS
+4. Save the file
+
+## STEP 3: INSTALL AUTO-UPDATE SCHEDULED TASK  
+────────────────────────────────────────────
+
+Run PowerShell as Administrator and execute:
+
+   cd "c:\Users\Administrator\Desktop\nuvio stream"
+   .\install-duckdns-task.ps1
+
+This will update your DuckDNS IP automatically every 5 minutes.
+
+## STEP 4: CONFIGURE PORT FORWARDING IN ROUTER
+────────────────────────────────────────────
+
+Your router admin panel: http://163.223.52.1
+
+1. Open browser, go to: http://163.223.52.1
+2. Log in (check router sticker for password)
+3. Find "Port Forwarding" or "Virtual Server" section
+4. Create these TWO rules:
+
+   ┌─────────────────────────────────────────┐
+   │ RULE 1: HTTP (for SSL verification)     │
+   ├─────────────────────────────────────────┤
+   │ Service Name: Nuvio-HTTP                │
+   │ External Port: 80                        │
+   │ Internal IP: [YOUR_LOCAL_IP]            │
+   │ Internal Port: 7000                      │
+   │ Protocol: TCP                            │
+   └─────────────────────────────────────────┘
+
+   ┌─────────────────────────────────────────┐
+   │ RULE 2: HTTPS (for secure access)       │
+   ├─────────────────────────────────────────┤
+   │ Service Name: Nuvio-HTTPS               │
+   │ External Port: 443                       │
+   │ Internal IP: [YOUR_LOCAL_IP]            │
+   │ Internal Port: 7000                      │
+   │ Protocol: TCP                            │
+   └─────────────────────────────────────────┘
+
+To find YOUR_LOCAL_IP, run in PowerShell:
+   ipconfig
+   
+Look for "IPv4 Address" (usually starts with 192.168.x.x or 10.0.x.x)
+
+## STEP 5: CONFIGURE WINDOWS FIREWALL
+────────────────────────────────────────────
+
+Run PowerShell as Administrator and execute:
+
+   netsh advfirewall firewall add rule name="Nuvio Streams HTTP" dir=in action=allow protocol=TCP localport=7000
+   netsh advfirewall firewall add rule name="Nuvio Streams HTTPS" dir=in action=allow protocol=TCP localport=7000
+
+## STEP 6: TEST HTTP ACCESS
+────────────────────────────────────────────
+
+From your phone (using cellular data, NOT WiFi):
+
+1. Open browser
+2. Go to: http://nuvio.duckdns.org
+3. You should see the Nuvio Streams landing page
+
+If it doesn't work:
+- Wait 5 minutes for DNS propagation
+- Check port forwarding rules are saved
+- Verify firewall rules are active
+- Test: nslookup nuvio.duckdns.org (should show 163.223.52.102)
+
+## STEP 7: SET UP SSL CERTIFICATE (HTTPS)
+────────────────────────────────────────────
+
+For HTTPS, you need an SSL certificate. Here are your options:
+
+### Option A: Use Cloudflare (Easiest)
+1. Sign up at cloudflare.com
+2. Add nuvio.duckdns.org as a domain
+3. Use Cloudflare's free SSL (automatic)
+
+### Option B: Use Win-ACME (Local)
+1. Download Win-ACME from: https://www.win-acme.com/
+2. Run wacs.exe
+3. Choose "Create new certificate"
+4. Domain: nuvio.duckdns.org
+5. Validation: HTTP (port 80)
+
+### Option C: Use Let's Encrypt with Certbot
+Requires setting up nginx or another web server as reverse proxy.
+
+## CURRENT STATUS
+────────────────────────────────────────────
+
+✅ PM2 service running on port 7000
+✅ DuckDNS scripts created
+✅ Network information detected
+⬜ DuckDNS domain configured (DO THIS FIRST)
+⬜ Port forwarding configured
+⬜ HTTP access working
+⬜ SSL certificate obtained
+⬜ HTTPS access working
+
+## QUICK TEST COMMANDS
+────────────────────────────────────────────
+
+# Test local service
+curl http://localhost:7000/health
+
+# Test DNS resolution
+nslookup nuvio.duckdns.org
+
+# Test from external (use phone on cellular)
+curl http://nuvio.duckdns.org/health
+
+# Test HTTPS (after SSL setup)
+curl https://nuvio.duckdns.org/health
+
+## NEED HELP?
+────────────────────────────────────────────
+
+See these files for more details:
+- DUCKDNS_HTTPS_SETUP.md - Complete detailed guide
+- PUBLIC_ACCESS_SETUP.md - Alternative setup methods
+- DOMAIN_SETUP_INSTRUCTIONS.md - Original domain setup
+
+## IMPORTANT NOTES
+────────────────────────────────────────────
+
+⚠️ Your public IP (163.223.52.102) may change if you reboot your router
+   or if your ISP assigns dynamic IPs. The DuckDNS auto-update script
+   will handle this automatically once configured.
+
+⚠️ Port forwarding must be configured in your router for external access.
+   Without it, nuvio.duckdns.org will not reach your Windows machine.
+
+⚠️ Some ISPs block port 80 and 443. If port forwarding doesn't work,
+   contact your ISP or use Cloudflare Tunnel instead.
+
+✅ Once HTTP works, setting up HTTPS is much easier!
